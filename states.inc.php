@@ -59,41 +59,42 @@ $machinestates = [
         "description" => "",
         "type" => "manager",
         "action" => "stGameSetup",
-        "transitions" => ["" => 31]
+        "transitions" => ["" => 2]
     ),
 
     // Note: ID=2 => your first state
 
     2 => [
-        "name" => "newHand",
+        "name" => "newTable",
         "description" => "",
         "descriptionmyturn" => "",
         "type" => "game",
-        "args" => "stNewHand",  #fct not implemented yet
-        "transitions" => ["newTrick" => 30]
+        "args" => "stNewTable",
+        "transitions" => ["newTurn" => 3]
     ],
 
-    30 => [
-        "name" => "newTrick",
+    3 => [
+        "name" => "newTurn",
         "description" => "",
         "descriptionmyturn" => "",
         "type" => "game",
-        "args" => "stNewTrick",#fct not implemented yet
+        "args" => "stNewHand",
         "transitions" => ["playerTurn" => 31]
     ],
+
+
 
     31 => [
         "name" => "playerTurn",
         "description" => clienttranslate('${actplayer} must play a card or pass'),
         "descriptionmyturn" => clienttranslate('${you} must play a card or pass'),
         "type" => "activeplayer",
-        "args" => "argPlayerTurn",
+//        "args" => "argPlayerTurn",
         "possibleactions" => [
-            // these actions are called from the front with bgaPerformAction, and matched to the function on the game.php file
-            "actPlayCard",
-            "actPass",
+            "actLeaveCard",
+            "actTakeCard",
         ],
-        "transitions" => ["playCard" => 32]
+        "transitions" => ["nextPlayer" => 32]
     ],
 
     32 => [
@@ -102,7 +103,7 @@ $machinestates = [
         "type" => "game",
         "action" => "stNextPlayer",
         "updateGameProgression" => true,
-        "transitions" => ["endHand" => 99, "nextPlayer" => 31, "nextTrick" => 30]
+        "transitions" => ["endHand" => 99, "playerTurn" => 31, "newTurn" => 3, "newTable" => 2]
     ],
 
     40 => [
