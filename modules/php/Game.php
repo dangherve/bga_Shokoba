@@ -45,7 +45,35 @@ class Game extends \Table
 
         $this->cards = $this->getNew("module.common.deck");
         $this->cards->init("card");
+
+        $this->tableCardPosition=0;
+
+        $this->turnCounter=0;
+
+        $this->lastCardPlay=-1;
+
+        $this->translatedColors = [
+            1 => clienttranslate('saphir'),
+            2 => clienttranslate('rubis'),
+            3 => clienttranslate('Emeraudes'),
+            4 => clienttranslate('Diamond'),
+        ];
     }
+    public function getHandSize(): int
+    {
+        return 3;
+    }
+    function getTableSize(): int
+    {
+        return 4;
+    }
+    function _checkActivePlayer()
+    {
+        if ($this->getActivePlayerId() !== $this->getCurrentPlayerId()) {
+            throw new feException(self::_("Unexpected Error: you are not the active player"), true);
+        }
+    }
+
 
     /**
      * Player action, example content.
@@ -55,48 +83,68 @@ class Game extends \Table
      *
      * @throws BgaUserException
      */
-    public function actPlayCard(int $card_id): void
+    public function actLeaveCard(int $card_id): void
     {
-        // Retrieve the active player ID.
-        $player_id = (int)$this->getActivePlayerId();
+        $this->checkAction('actLeaveCard');
+        $player_id = $this->getActivePlayerId();
+        $this->_checkActivePlayer();
+        $currentCard = $this->_checkAndGetPlayerCard($card_id, $player_id);
 
-        // check input values
-        $args = $this->argPlayerTurn();
-        $playableCardsIds = $args['playableCardsIds'];
-        if (!in_array($card_id, $playableCardsIds)) {
-            throw new \BgaUserException('Invalid card choice');
+        $this->tableCardPosition++;
+
+        $this->cards->moveCard($card_id, 'table',$this->tableCardPosition);
+
+
+        $this->notifyAllPlayers(
+            'leaveCard',
+            clienttranslate('LeaveCard'),
+            [
+                'card_id' => $card_id,
+                'player_id' => $player_id,
+            ]
+        );
+        $this->gamestate->nextState('nextPlayer');
+    }
+
+
+    public function actTakeCard(int $card_id): void
+    {
+        $this->checkAction('actTakeCard');
+
+        $player_id = $this->getActivePlayerId();
+        $this->_checkActivePlayer();
+        $currentCard = $this->_checkAndGetPlayerCard($card_id, $player_id);
+
+
+        $this->cards->moveCard($card_id, 'table');
+
+
+        $this->notifyAllPlayers(
+            'leaveCard',
+            clienttranslate('LeaveCard'),
+            [
+
+            ]
+        );
+        $this->gamestate->nextState('nextPlayer');
+    }
+
+   function _checkAndGetPlayerCard($card_id, $player_id)
+    {
+        $playerCard = null;
+        $playerHand = $this->cards->getCardsInLocation('hand', $player_id);
+        foreach ($playerHand as $card) {
+            if ((int)$card['id'] === $card_id) {
+                $playerCard = $card;
+            }
+        }
+        if ($playerCard === null) {
+            throw new feException(self::_("Unexpected Error: Invalid Card"), true);
         }
 
-        // Add your game logic to play a card here.
-        $card_name = self::$CARD_TYPES[$card_id]['card_name'];
-
-        // Notify all players about the card played.
-        $this->notifyAllPlayers("cardPlayed", clienttranslate('${player_name} plays ${card_name}'), [
-            "player_id" => $player_id,
-            "player_name" => $this->getActivePlayerName(),
-            "card_name" => $card_name,
-            "card_id" => $card_id,
-            "i18n" => ['card_name'],
-        ]);
-
-        // at the end of the action, move to the next state
-        $this->gamestate->nextState("playCard");
+        return $playerCard;
     }
 
-    public function actPass(): void
-    {
-        // Retrieve the active player ID.
-        $player_id = (int)$this->getActivePlayerId();
-
-        // Notify all players about the choice to pass.
-        $this->notifyAllPlayers("cardPlayed", clienttranslate('${player_name} passes'), [
-            "player_id" => $player_id,
-            "player_name" => $this->getActivePlayerName(),
-        ]);
-
-        // at the end of the action, move to the next state
-        $this->gamestate->nextState("pass");
-    }
 
     /**
      * Game state arguments, example content.
@@ -146,9 +194,21 @@ class Game extends \Table
 
         $this->activeNextPlayer();
 
+        if ( $this->cards->countCardInLocation('hand')>0){
+            $this->gamestate->nextState("playerTurn");
+        }else if($this->cards->countCardInLocation('deck')==0){
+            $this->gamestate->nextState("newTable");
+        }else{
+            $this->gamestate->nextState("newTurn");
+        }
+
+
+
+
+
         // Go to another gamestate
         // Here, we would detect if the game is over, and in this case use "endGame" transition instead
-        $this->gamestate->nextState("nextPlayer");
+
     }
 
     /**
@@ -195,8 +255,8 @@ class Game extends \Table
 
         // WARNING: We must only return information visible by the current player.
         $current_player_id = (int) $this->getCurrentPlayerId();
-
         $player_id = $this->getCurrentPlayerId();
+        $result['player_id'] = $player_id;
 
         // Get information about players.
         // NOTE: you can retrieve some extra field you added for "player" table in `dbmodel.sql` if you need it.
@@ -208,16 +268,7 @@ class Game extends \Table
 
 
         // Hands
-        $players = $this->loadPlayersBasicInfos();
-
-        foreach ($players as $other_id => $other) {
-            $isSelf = ((int) $other_id) === ((int) $player_id);
-            $isSpectator = !isset($players[$player_id]);
-
-            $shouldCardsBeHidden = false;// !($isSelf || $isSpectator) ;//!$isGameOver && ($isSelf || $isSpectator);
-            $result['hand' . $other_id] = $this->getPlayerHand($other_id, $shouldCardsBeHidden);
-        }
-
+        $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
 
         $result['table'] = $this->cards->getCardsInLocation('table');
 
@@ -274,8 +325,7 @@ class Game extends \Table
 
 
         $this->initializeDeck();
-        $this->initializePlayersHand();
-        $this->initializeGameTable();
+
 
         // Init game statistics.
         //
@@ -292,81 +342,66 @@ class Game extends \Table
     }
 
 
-    protected function getPlayerHand($player_id, bool $shouldCardsBeHidden = false): array
+    protected function getPlayerHand($player_id): array
     {
         $cards = $this->cards->getCardsInLocation('hand', $player_id);
-        foreach ($cards as $i => $value) {
-            if ($shouldCardsBeHidden) {
-                $cards[$i]['type'] = 0;//$this->defautColor;
-                $cards[$i]['type_arg'] = 0;//$this->defautValue;
-            }
-        }
 
         return $cards;
     }
 
 
-//TO DO to adapt
-    function stNewHand() {
-        // Find the dealer and first player
-        $dealer_id = self::getGameStateValue('dealer_id');
-        $dealer_name = self::getPlayerName($dealer_id);
-		$first_player_id = self::getGameStateValue('first_player_id');
+    function stNewTable() {
 
         // Take back all cards (from any location => null) to deck and shuffle
         $this->cards->moveAllCardsInLocation(null, "deck");
         $this->cards->shuffle('deck');
 
         // Deal cards to each player (and signal the UI to clean-up)
-        self::notifyAllPlayers('cleanUp', clienttranslate('${player_name} deals a new hand.'), array('player_name' => $dealer_name, 'dealer_id' => $dealer_id, 'first_player_id' => $first_player_id));
+        self::notifyAllPlayers('cleanUp', clienttranslate('${player_name} deals a new hand.'));
 
 		// Create deck, shuffle it and give initial cards
         $players = self::loadPlayersBasicInfos();
-        $invalid_hand = false;
-        $trump_1_found = false;
-        foreach($players as $player_id => $player) {
-            $hand = $this->cards->pickCards(self::getGameStateValue('card_number_for_each_player'), 'deck', $player_id );
 
+        $this->initializeGameTable();
+
+/*
+        foreach($players as $player_id => $player) {
             // Notify player about his cards
-            self::notifyPlayer($player_id, 'newHand', clienttranslate('-- Your cards are:&nbsp;<br />${cards}'), array(
+            self::notifyPlayer($player_id, 'newTable', clienttranslate('-- Your cards are:&nbsp;<br />${cards}'), array(
                 'cards' => self::listCardsForNotification($hand),
                 'hand' => $hand,
             ));
-
-            if (!$trump_1_found) { // Check if the owner of the 1 of Trump has any other Trump or the Fool
-                $any_other_trump = false;
-                foreach($hand as $card) {
-                    if ($card['type'] != 5) { // Not a trump nor the Fool
-                        continue;
-                    }
-                    if ($card['type_arg'] == 1) {
-                        $trump_1_found = true;
-                        if ($any_other_trump) {
-                            $break;
-                        }
-                    }
-                    else { // An other Trump or the fool
-                        $any_other_trump = true;
-                    }
-                }
-
-                if ($trump_1_found && !$any_other_trump) {
-                    $invalid_hand = true;
-                    self::notifyAllPlayers('log', clienttranslate('${player_name} has the Trump 1 with no other Trump nor the Fool. This hand is canceled.'), array('player_name' => self::getPlayerName($player_id)));
-                }
-            }
         }
-
-        if ($invalid_hand) {
-            self::changeDealerAndFirstPlayer();
-            self::incStat(1, "hand_number");
-            $this->gamestate->nextState('dealAgain');
-        }
-        else {
-            $this->gamestate->nextState('validDeal');
-        }
+*/
+       $this->gamestate->nextState('newTurn');
     }
 
+
+
+    function stNewHand() {
+
+
+		// Create deck, shuffle it and give initial cards
+        $players = self::loadPlayersBasicInfos();
+
+        $this->initializePlayersHand();
+
+        foreach($players as $player_id => $player) {
+            // Notify player about his cards
+
+
+            $hand = $this->getPlayerHand($player_id);
+
+//${cards}
+            self::notifyPlayer($player_id, 'newHand', clienttranslate('TOTO'), array(
+//                'cards' => self::listCardsForNotification($hand),
+                'hand' => $hand,
+            ));
+
+        }
+
+       $this->gamestate->nextState('playerTurn');
+    }
 
     // Create and shuffle deck
     protected function initializeDeck()
@@ -374,66 +409,55 @@ class Game extends \Table
 
         $cards = [];
 
+        //May be a way to improve this
         //saphir card 1->10 3 each no 7
         for ($value = 1; $value <= 10; ++$value) {
             if ($value != 7) {
-                $cards[] = ['type' => "saphir", 'type_arg' => $value, 'nbr' => 3];
+                $cards[] = ['type' => 1, 'type_arg' => $value, 'nbr' => 3];
             }
         }
 
         //rubis card 1->10 1 each no 7
         for ($value = 1; $value <= 10; ++$value) {
             if ($value != 7) {
-                $cards[] = ['type' => "rubis", 'type_arg' => $value, 'nbr' => 1];
+                $cards[] = ['type' => 2, 'type_arg' => $value, 'nbr' => 1];
             }
         }
 
         //Emeraudes 3 x 7 card
-        $cards[] = ['type' => "Emeraudes", 'type_arg' => 7, 'nbr' => 3];
+        $cards[] = ['type' => 3, 'type_arg' => 7, 'nbr' => 3];
 
         //Diamond
-        $cards[] = ['type' => "Diamond", 'type_arg' => 7, 'nbr' => 1];
+        $cards[] = ['type' => 4, 'type_arg' => 7, 'nbr' => 1];
 
 
         $this->cards->createCards($cards, 'deck');
 
-        $this->cards->shuffle('deck');
-/*
-        $offset = (2 * $this->getTotalCardCount()) + 1;
-        $sql1 = "UPDATE card SET card_id = " . $offset . "+card_id WHERE 1"; // avoid id duplicates in next step.
-        self::DbQuery($sql1);
-        $sql2 = "UPDATE card SET card_id = 2*(card_location_arg+1), clue_type = 0, clue_type_arg = 0, discard_order = 0 WHERE 1"; // use initial position as id.
-        self::DbQuery($sql2);
-*/
     }
 
 
+//            $hand = $this->cards->pickCards(self::getGameStateValue('card_number_for_each_player'), 'deck', $player_id );
+//for variant in option
 
-    function getHandSize(): int
-    {
-        return 3;
-    }
-
-    function getTableSize(): int
-    {
-        return 4;
-    }
 
     protected function initializePlayersHand(): void
     {
-
+        $this->turnCounter=0;
         $players = $this->loadPlayersBasicInfos();
         $handSize = $this->getHandSize();
         foreach ($players as $player_id => $player) {
             $this->cards->pickCards($handSize, 'deck', $player_id);
-
         }
     }
 
     protected function initializeGameTable(): void
     {
         $tableSize = $this->getTableSize();
-        $this->cards->pickCardsForLocation($tableSize,'deck', 'table');
+
+        for ($i=0;$i<$tableSize;$i++){
+            $this->cards->pickCardForLocation('deck', 'table',$i);
+        }
+        $this->tableCardPosition=$tableSize;
     }
 
 

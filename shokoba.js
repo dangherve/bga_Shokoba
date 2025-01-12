@@ -31,6 +31,9 @@ function (dojo, declare) {
 
             this.cards_per_row = 5;
             this.cards_url = g_gamethemeurl + 'img/cards.png';
+
+            this.playerHand = null;
+
         },
 
         /*
@@ -50,6 +53,9 @@ function (dojo, declare) {
         {
             console.log( "Starting game setup" );
 
+            this.playerId = Number(gamedatas.player_id);
+            this.dragStatus = { drag: 'none', selectedItemId: null, nodes: [] };
+
             document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
                 <div id="player-tables"></div>
                 <div id="debug"></div>
@@ -58,7 +64,9 @@ function (dojo, declare) {
             var stock = new ebg.stock();
             stock.create(this, $('player-tables'), this.cardwidth, this.cardheight);
 
-             stock.image_items_per_row = 10;
+            stock.image_items_per_row = 10;
+            dojo.connect(stock, 'onChangeSelection', this, 'onTableSelectionChanged');
+
             for(var color=1;color<=4;color++) {
                 for(var value=1;value<=10;value++) {
                     // Build card type id
@@ -70,120 +78,63 @@ function (dojo, declare) {
             for ( var i in this.gamedatas['table' ]) {
                 var card = this.gamedatas['table'][i];
                 var value = card.type_arg;
-
-                switch(card.type) {
-                    case "saphir":
-                        // code block
-                        var color=1;
-                        break;
-                    case "rubis":
-                        // code block
-                        var color=2;
-                        break;
-                    case "Emeraudes":
-                        // code block
-                        var color=3;
-                        break;
-                    case "Diamond":
-                        // code block
-                        var color=4;
-                        break;
-                }
+                var color=card.type;
                 stock.addToStockWithId(this.getCardUniqueId(color, value), card.id);
 
             }
-            document.getElementById('game_play_area').insertAdjacentHTML('beforeend', text);
             this.tablePile = stock;
-
             // Example to add a div on the game area
 
-
             // TODO: Set up your game interface here, according to "gamedatas"
-
-
-
 
 //            this.players = gamedatas.players;
 
             var player_number = Object.keys(gamedatas.players).length;
-            this.playerPile = [];
 
-             Object.values(gamedatas.players).forEach(player => {
-//            for (var player=1; player<=player_number;player++){
-                document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
-                            <div id="myhand_wrap-${player.id}" class="whiteblock">
-                                <b id="myhand_label">${player.name}</b>
-                                <div id="hand-${player.id}"></div>
-                                                                <div id="D-${player.id}"></div>
-                            </div>
+            document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
+                <div id="myhand_wrap" class="whiteblock">
+                 <div id="hand"></div>
+                <div id="D"></div>
+                </div>
+            `);
 
-                        `);
+            var stock = new ebg.stock();
+            stock.create(this, $('hand'), this.cardwidth, this.cardheight);
 
-                var stock = new ebg.stock();
-                stock.create(this, $('hand-'+ player.id), this.cardwidth, this.cardheight);
+            //TO DO should be active player only
+            stock.setSelectionMode(1); // By default, no card can be selected. Some states will change that
 
-                //TO DO should be active player only
-                stock.setSelectionMode(1); // By default, no card can be selected. Some states will change that
+            // check diff
+            stock.setSelectionAppearance('class');
 
-                // check diff
-                 stock.setSelectionAppearance('class');
+            stock.centerItems = true;
 
-                stock.centerItems = true;
+            stock.image_items_per_row = 10;
 
-                stock.image_items_per_row = 10;
+            //stock.onItemCreate = dojo.hitch(this, 'onCreateNewCard');
 
-                //stock.onItemCreate = dojo.hitch(this, 'onCreateNewCard');
+            dojo.connect(stock, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
 
-                //TO DO should be active player only
-                //dojo.connect(stock, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
-
-
-                //TO DO should be active player only
-
-                var position_in_sprite = 0;
-                for(var color=1;color<=4;color++) {
-                    for(var value=1;value<=10;value++) {
-                        // Build card type id
-                        var card_id = this.getCardUniqueId(color, value);
-                        stock.addItemType(card_id, null, this.cards_url, card_id);
-                        position_in_sprite++;
-                    }
+            var position_in_sprite = 0;
+            for(var color=1;color<=4;color++) {
+                for(var value=1;value<=10;value++) {
+                    // Build card type id
+                    var card_id = this.getCardUniqueId(color, value);
+                    stock.addItemType(card_id, null, this.cards_url, card_id);
+                    position_in_sprite++;
                 }
+            }
             // Cards in player's hand
 
 
-            for(var i in this.gamedatas['hand' + player.id]) {
-                var card = this.gamedatas['hand' + player.id][i];
+            for(var i in this.gamedatas['hand']) {
+                var card = this.gamedatas['hand'][i];
                 var value = card.type_arg;
-                switch(card.type) {
-                    case "saphir":
-                        // code block
-                        var color=1;
-                        break;
-                    case "rubis":
-                        // code block
-                        var color=2;
-                        break;
-                    case "Emeraudes":
-                        // code block
-                        var color=3;
-                        break;
-                    case "Diamond":
-                        // code block
-                        var color=4;
-                        break;
-                }
-
+                var color=card.type;
                 stock.addToStockWithId(this.getCardUniqueId(color, value), card.id);
 
             }
-
-            this.playerPile[player.id] = stock;
-
-            });
-
-
-
+            this.playerHand = stock;
 
 
             // Setup game notifications to handle (see "setupNotifications" method below)
@@ -259,7 +210,7 @@ function (dojo, declare) {
         onUpdateActionButtons: function( stateName, args )
         {
             console.log( 'onUpdateActionButtons: '+stateName, args );
-
+/*
             if( this.isCurrentPlayerActive() )
             {
                 switch( stateName )
@@ -276,6 +227,7 @@ function (dojo, declare) {
                     break;
                 }
             }
+            */
         },
 
         ///////////////////////////////////////////////////
@@ -292,9 +244,18 @@ function (dojo, declare) {
         ///////////////////////////////////////////////////
         //// Player's action
 
+
+      setChooseActionState: function () {
+        this.changeMainBar(_('You must play a card or pass'));
+        this.unhiglightCards();
+
+        this.SelectionType = 'null';
+        this.playerHand.unselectAll();
+      },
+
+
         /*
 
-            Here, you are defining methods to handle player's action (ex: results of mouse click on
             game objects).
 
             Most of the time, these methods:
@@ -317,6 +278,105 @@ function (dojo, declare) {
             });
         },
 
+        onTakeCard: function () {
+            this.bgaPerformAction('actTakeCard', {
+                cardId: this.selectedCardId // the "cardId" param match the PHP variable name
+            });
+        },
+
+        onLeaveCard: function () {
+            this.bgaPerformAction('actLeaveCard', {
+                card_id: this.dragStatus.selectedItemId
+            });
+        },
+
+      ///////////////////////////////////////////////////
+      //// Interface action
+
+//may have to add for table also
+      unhiglightCards: function () {
+//        for (var player_id in this.playerHand) {
+//          if (Number(player_id) !== this.playerId) {
+            var playerHand = this.playerHand;
+            var items = playerHand.getAllItems();
+            for (var i in items) {
+              var card_id = items[i]['id'];
+//              dojo.removeClass('playertablecard_item_' + card_id, 'target_element');
+            }
+//          }
+//        }
+      },
+
+
+      changeMainBar: function (message) {
+        $('generalactions').innerHTML = '';
+        $('pagemaintitletext').innerHTML = message;
+      },
+
+      setPlayCardState: function () {
+        this.changeMainBar('');
+        this.addActionButton('takeCard_button', _('Take selected card'), 'onTakeCard');
+        this.addActionButton('leaveCard_button', _('Leave selected card'), 'onLeaveCard');
+        this.addActionButton('cancel_button', _('Cancel'), 'setChooseActionState');
+
+        this.unhiglightCards();
+      },
+
+
+      setPlayCardState2: function () {
+        this.changeMainBar('');
+        this.addActionButton('takeCard_button', _('Take selected card'), 'onTakeCard');
+        this.addActionButton('cancel_button', _('Cancel'), 'setChooseActionState');
+
+        this.unhiglightCards();
+      },
+
+      onPlayerHandSelectionChanged: function () {
+
+        var playerHand = this.playerHand;
+
+        if (playerHand.getSelectedItems().length == 0) {
+          return;
+        }
+
+        if (this.checkAction('actTakeCard')) {
+
+            var items = playerHand.getSelectedItems();
+            if (items.length > 0) {
+                this.SelectionType = 'hand';
+                this.setPlayCardState();
+                this.dragStatus.selectedItemId = items[0].id;
+            } else if (this.SelectionType === 'hand') {
+                this.setChooseActionState();
+            }
+        } else {
+            playerHand.unselectAll();
+        }
+      },
+
+      onTableSelectionChanged: function () {
+
+        var Table = this.tablePile;
+
+        if (Table.getSelectedItems().length == 0) {
+          return;
+        }
+
+        if (this.checkAction('actTakeCard')) {
+
+          var items = Table.getSelectedItems();
+          if (items.length > 0) {
+            this.SelectionType = 'table';
+            this.setPlayCardState2();
+            this.dragStatus.selectedItemId = items[0].id;
+          } else if (this.SelectionType === 'table') {
+            this.setChooseActionState2();
+          }
+        } else {
+            playerHand.unselectAll();
+        }
+
+      },
 
         ///////////////////////////////////////////////////
         //// Reaction to cometD notifications
@@ -345,7 +405,44 @@ function (dojo, declare) {
             // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
             // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
             //
+
+            dojo.subscribe('leaveCard', this, 'notif_leaveCard');
+
+            dojo.subscribe('newHand', this, 'notif_newHand');
+
         },
+
+
+        notif_newHand: function(notif) {
+
+            for (var i in notif.args.hand) {
+                var card = notif.args.hand[i];
+                var color = card.type;
+                var value = card.type_arg;
+                this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+            }
+
+        },
+
+
+      notif_leaveCard: function (notif) {
+
+
+            var player_id = notif.args.player_id;
+            var card_id = notif.args.card_id;
+
+            // You played a card. If it exists in your hand, move card from there and remove the corresponding item
+            if($('hand_item_' + card_id)) {
+
+                var card_type = this.playerHand.getItemById(card_id)['type']
+                this.playerHand.removeFromStockById(notif.args.card_id);
+
+                this.tablePile.addToStockWithId(card_type,notif.args.card_id);
+
+            }
+            this.playerHand[notif.args.player_id]
+
+      },
 
         // TODO: from this point and below, you can write your game notifications handling methods
 
