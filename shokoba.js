@@ -33,7 +33,7 @@ function (dojo, declare) {
             this.cards_url = g_gamethemeurl + 'img/cards.png';
 
             this.playerHand = null;
-
+            this.tableCard = null;
         },
 
         /*
@@ -54,7 +54,8 @@ function (dojo, declare) {
             console.log( "Starting game setup" );
 
             this.playerId = Number(gamedatas.player_id);
-            this.dragStatus = { drag: 'none', selectedItemId: null, nodes: [] };
+            this.playerCard = { drag: 'none', selectedItemId: null, nodes: [] };
+            this.tableCard = { drag: 'none', selectedItemId: null, nodes: [] };
 
             document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
                 <div id="player-tables"></div>
@@ -82,7 +83,7 @@ function (dojo, declare) {
                 stock.addToStockWithId(this.getCardUniqueId(color, value), card.id);
 
             }
-            this.tablePile = stock;
+            this.tableCard = stock;
             // Example to add a div on the game area
 
             // TODO: Set up your game interface here, according to "gamedatas"
@@ -279,14 +280,27 @@ function (dojo, declare) {
         },
 
         onTakeCard: function () {
+            var playerCard_id;
+            var tableCard_ids = [];
+            for (let i=0; i < this.tableCard.getSelectedItems().length; i++) {
+                tableCard_ids.push ( this.tableCard.getSelectedItems()[i].id);
+            };
+
+            if ( this.playerHand.getSelectedItems().length == 0 ){
+                playerCard_id = -1;
+            }else{
+                playerCard_id = this.playerHand.getSelectedItems()[0].id;
+            }
+
             this.bgaPerformAction('actTakeCard', {
-                cardId: this.selectedCardId // the "cardId" param match the PHP variable name
+                tableCard_ids: tableCard_ids.join(','),
+                playerCard_id: playerCard_id
             });
         },
 
         onLeaveCard: function () {
             this.bgaPerformAction('actLeaveCard', {
-                card_id: this.dragStatus.selectedItemId
+                card_id: this.playerCard.selectedItemId
             });
         },
 
@@ -345,7 +359,7 @@ function (dojo, declare) {
             if (items.length > 0) {
                 this.SelectionType = 'hand';
                 this.setPlayCardState();
-                this.dragStatus.selectedItemId = items[0].id;
+                this.playerCard.selectedItemId = items[0].id;
             } else if (this.SelectionType === 'hand') {
                 this.setChooseActionState();
             }
@@ -356,24 +370,24 @@ function (dojo, declare) {
 
       onTableSelectionChanged: function () {
 
-        var Table = this.tablePile;
+        var tableCard = this.tableCard;
 
-        if (Table.getSelectedItems().length == 0) {
+        if (tableCard.getSelectedItems().length == 0) {
           return;
         }
 
         if (this.checkAction('actTakeCard')) {
 
-          var items = Table.getSelectedItems();
+          var items = tableCard.getSelectedItems();
           if (items.length > 0) {
             this.SelectionType = 'table';
             this.setPlayCardState2();
-            this.dragStatus.selectedItemId = items[0].id;
+            this.tableCard.selectedItemId = items[0].id;
           } else if (this.SelectionType === 'table') {
             this.setChooseActionState2();
           }
         } else {
-            playerHand.unselectAll();
+            tableCard.unselectAll();
         }
 
       },
@@ -406,6 +420,7 @@ function (dojo, declare) {
             // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
             //
 
+            dojo.subscribe('takeCard', this, 'notif_takeCard');
             dojo.subscribe('leaveCard', this, 'notif_leaveCard');
 
             dojo.subscribe('newHand', this, 'notif_newHand');
@@ -435,14 +450,43 @@ function (dojo, declare) {
             if($('hand_item_' + card_id)) {
 
                 var card_type = this.playerHand.getItemById(card_id)['type']
-                this.playerHand.removeFromStockById(notif.args.card_id);
+                this.playerHand.removeFromStockById(card_id);
 
-                this.tablePile.addToStockWithId(card_type,notif.args.card_id);
+                this.tableCard.addToStockWithId(card_type,card_id);
 
             }
-            this.playerHand[notif.args.player_id]
+
 
       },
+
+
+      notif_takeCard: function (notif) {
+
+
+            var player_id = notif.args.player_id;
+            var card_id = notif.args.playerCard_id;
+
+            // You played a card. If it exists in your hand, move card from there and remove the corresponding item
+            if($('hand_item_' + card_id)) {
+                var card_type = this.playerHand.getItemById(card_id)['type']
+                this.playerHand.removeFromStockById(card_id);
+            }
+
+
+            var card_ids = notif.args.tableCard_id;
+            for (let index = 0; index < card_ids.length; index++) {
+                card_id=card_ids[index];
+                // You played a card. If it exists in your hand, move card from there and remove the corresponding item
+                if($('player-tables_item_' + card_id)) {
+
+                    var card_type = this.tableCard.getItemById(card_id)['type']
+                    //got error with noupdate
+                    this.tableCard.removeFromStockById(card_id);
+                }
+            }
+            this.tableCard.updateDisplay()
+      },
+
 
         // TODO: from this point and below, you can write your game notifications handling methods
 
