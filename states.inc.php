@@ -82,19 +82,16 @@ $machinestates = [
         "transitions" => ["playerTurn" => 31]
     ],
 
-
-
     31 => [
         "name" => "playerTurn",
         "description" => clienttranslate('${actplayer} must play a card or pass'),
         "descriptionmyturn" => clienttranslate('${you} must play a card or pass'),
         "type" => "activeplayer",
-//        "args" => "argPlayerTurn",
         "possibleactions" => [
             "actLeaveCard",
             "actTakeCard",
         ],
-        "transitions" => ["nextPlayer" => 32]
+        "transitions" => ["nextPlayer" => 32, "playerTurn" => 31]
     ],
 
     32 => [
@@ -103,18 +100,8 @@ $machinestates = [
         "type" => "game",
         "action" => "stNextPlayer",
         "updateGameProgression" => true,
-        "transitions" => ["endHand" => 99, "playerTurn" => 31, "newTurn" => 3, "newTable" => 2]
+        "transitions" => ["endGame" => 99, "playerTurn" => 31, "newTurn" => 3, "newTable" => 2]
     ],
-
-    40 => [
-        "name" => "endHand",
-        "description" => '',
-        "type" => "game",
-        "action" => "stEndHand",
-        "updateGameProgression" => true,
-        "transitions" => ["endGame" => 99, "nextHand" => 20]
-    ],
-
 
 
     // Final state.
