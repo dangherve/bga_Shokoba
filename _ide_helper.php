@@ -81,6 +81,89 @@ namespace Bga\GameFramework\Actions\Types {
     }
 }
 
+namespace Bga\GameFramework {
+    abstract class Notify {
+        /**
+         * Add a decorator function, to be applied on args when a notif function is called.
+         */
+        public function addDecorator(callable $fn) {
+           //
+        }
+
+        /**
+         * Send a notification to a single player of the game.
+         *
+         * @param int $playerId the player ID to send the notification to.
+         * @param string $notifName a comprehensive string code that explain what is the notification for.
+         * @param string $message some text that can be displayed on player's log window (should be surrounded by clienttranslate if not empty).
+         * @param array $args notification arguments.
+         */
+        public function player(int $playerId, string $notifName, ?string $message = '', array $args = []): void {
+            //
+        }
+
+        /**
+         * Send a notification to all players of the game and spectators (public).
+         *
+         * @param string $notifName a comprehensive string code that explain what is the notification for.
+         * @param string $message some text that can be displayed on player's log window (should be surrounded by clienttranslate if not empty).
+         * @param array $args notification arguments.
+         */
+        public function all(string $notifName, ?string $message = '', array $args = []): void {
+            //
+        }
+    }
+}
+
+namespace Bga\GameFramework\Db {
+    abstract class Globals
+    {
+        /**
+         * Delete global variables.
+         *
+         * @param string[] ...$names
+         */
+        public function delete(...$names): void
+        {
+            //
+        }
+
+        /**
+         * Returns the value of `$name` if it exists. Otherwise, fallback on `$defaultValue`.
+         */
+        public function get(string $name, mixed $defaultValue = null): mixed
+        {
+            return null;
+        }
+
+        /**
+         * Returns true if globals has a key `$name`.
+         */
+        public function has(string $name): bool
+        {
+            return false;
+        }
+
+        /**
+         * Increment the global `$name` by `$step`.
+         *
+         * @throws BgaSystemException if the global `$name` is not a numeric value.
+         */
+        public function inc(string $name, int $step): int
+        {
+            return 0;
+        }
+
+        /**
+         * Set `$name` with the value `$value`.
+         */
+        public function set(string $name, mixed $value): void
+        {
+            //
+        }
+    }
+}
+
 namespace {
     exit("This file should not be included, only analyzed by your IDE");
 
@@ -410,7 +493,7 @@ namespace {
          *
          * @see states.inc.php
          */
-        final public function nextState(string $transition): void
+        final public function nextState(string $transition = ''): void
         {
             //
         }
@@ -440,9 +523,9 @@ namespace {
         /**
          * All playing players are made inactive. Transition to next state.
          */
-        final public function setAllPlayersNonMultiactive(string $nextState): void
+        final public function setAllPlayersNonMultiactive(string $nextState): bool
         {
-            //
+            return false;
         }
 
         /**
@@ -566,53 +649,6 @@ namespace {
         }
     }
 
-    abstract class Globals
-    {
-        /**
-         * Delete global variables.
-         *
-         * @param string[] ...$names
-         */
-        public function delete(...$names): void
-        {
-            //
-        }
-
-        /**
-         * Returns the value of `$name` if it exists. Otherwise, fallback on `$defaultValue`.
-         */
-        public function get(string $name, mixed $defaultValue = null): mixed
-        {
-            return null;
-        }
-
-        /**
-         * Returns true if globals has a key `$name`.
-         */
-        public function has(string $name): bool
-        {
-            return false;
-        }
-
-        /**
-         * Increment the global `$name` by `$step`.
-         *
-         * @throws BgaSystemException if the global `$name` is not a numeric value.
-         */
-        public function inc(string $name, int $step): int
-        {
-            return 0;
-        }
-
-        /**
-         * Set `$name` with the value `$value`.
-         */
-        public function set(string $name, mixed $value): void
-        {
-            //
-        }
-    }
-
     abstract class Table extends APP_Object
     {
         /**
@@ -623,7 +659,12 @@ namespace {
         /**
          * Access the underlying global values.
          */
-        readonly public Globals $globals;
+        readonly public \Bga\GameFramework\Db\Globals $globals;
+
+        /**
+         * Access the underlying Notify object.
+         */
+        readonly public \Bga\GameFramework\Notify $notify;
 
         /**
          * Default constructor.
@@ -713,7 +754,7 @@ namespace {
          * NOTE: You **cannot** use this method in an `activeplayer` or `multipleactiveplayer` state. You must use a
          * `game` type game state for this.
          *
-         * @return void
+         * @return int the new active player id
          */
         final public function activeNextPlayer(): int|string
         {
@@ -858,7 +899,7 @@ namespace {
          * NOTE: this method use globals "cache" if you directly manipulated globals table OR call this function after
          * `undoRestorePoint()` - it won't work as expected.
          */
-        final public function getGameStateValue(string $label, int $default = 0): int|string
+        final public function getGameStateValue(string $label, ?int $default = null): int|string
         {
             return '0';
         }
@@ -1139,6 +1180,9 @@ namespace {
         /**
          * Send a notification to all players of the game and spectators (public).
          *
+         * @param string $notification_type a comprehensive string code that explain what is the notification for.
+         * @param string $notification_log some text that can be displayed on player's log window (should be surrounded by clienttranslate if not empty).
+         * @param array $notification_args notification arguments.
          * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#NotifyAllPlayers
          */
         final public function notifyAllPlayers(string $notificationType, string $notificationLog, array $notificationArgs): void
@@ -1147,9 +1191,13 @@ namespace {
         }
 
         /**
-         * Send a notification to a single players of the game.
+         * Send a notification to a single player of the game.
          *
-         * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#NotifyPlayer
+         * @param int $player_id the player ID to send the notification to.
+         * @param string $notification_type a comprehensive string code that explain what is the notification for.
+         * @param string $notification_log some text that can be displayed on player's log window (should be surrounded by clienttranslate if not empty).
+         * @param array $notification_args notification arguments.
+         * @see https://en.doc.boardgamearena.com/Main_game_logic:_yourgamename.game.php#NotifyAllPlayers
          */
         final public function notifyPlayer(int $playerId, string $notificationType, string $notificationLog, array $notificationArgs): void
         {
@@ -1321,6 +1369,11 @@ namespace {
 
         /**
          * Make the previous player active (in the natural player order).
+         *
+         * NOTE: You **cannot** use this method in an `activeplayer` or `multipleactiveplayer` state. You must use a
+         * `game` type game state for this.
+         *
+         * @return int the new active player id
          */
         final protected function activePrevPlayer(): void
         {
@@ -1348,7 +1401,7 @@ namespace {
          *
          * @return array
          */
-        abstract protected function getAllDatas();
+        abstract protected function getAllDatas(): array;
 
         /**
          * Get the "current_player" color.
@@ -1385,6 +1438,8 @@ namespace {
 
         /**
          * Return an associative array which associate each player with the previous player around the table.
+         *
+         * @return array<int, int>
          */
         final protected function getPrevPlayerTable($players): array
         {
@@ -1469,6 +1524,23 @@ namespace {
          * Use DBPREFIX_<table_name> for all tables in the $sql parameter.
          */
         function applyDbUpgradeToAllDB(string $sql): void {
+        }
+
+        /**
+         * For authorized games using external API only.
+         */
+        function getGenericGameInfos(string $api, array $args = []) : array {
+            return [];
+        }
+
+        /**
+         * Return the BGA environment this table is running on.
+         * This should be used for debug purpose only.
+         * 
+         * @return string "studio" or "prod"
+         */
+        static function getBgaEnvironment(): string {
+            return '';
         }
     }
 
@@ -1773,7 +1845,7 @@ namespace {
          * !!! location arg is reseted to 0 or specified value !!!
          * if "from_location" and "from_location_arg" are null: move ALL cards to specific location
          */
-        function moveAllCardsInLocation(string $from_location, ?string $to_location, ?int $from_location_arg=null, int $to_location_arg=0 ): void
+        function moveAllCardsInLocation(?string $from_location, ?string $to_location, ?int $from_location_arg=null, int $to_location_arg=0 ): void
         {
         }
 

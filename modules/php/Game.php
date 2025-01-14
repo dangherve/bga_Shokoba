@@ -39,16 +39,17 @@ class Game extends \Table
         parent::__construct();
 
         $this->initGameStateLabels([
-            "lastCardPlay" => 10
+            "lastCardPlay" => 10,
+            "tableCardPosition" => 11,
+            "HandSize" => 12,
+            "TableSize" => 13,
+//            "NumberOfPlayer" => 14,
+            "finalScore" => 15,
+
         ]);
 
         $this->cards = $this->getNew("module.common.deck");
         $this->cards->init("card");
-
-        $this->tableCardPosition=0;
-
-        $this->turnCounter=0;
-
 
         $this->translatedColors = [
             1 => clienttranslate('saphir'),
@@ -57,14 +58,8 @@ class Game extends \Table
             4 => clienttranslate('Diamond'),
         ];
     }
-    public function getHandSize(): int
-    {
-        return 3;
-    }
-    function getTableSize(): int
-    {
-        return 4;
-    }
+
+
     function _checkActivePlayer()
     {
         if ($this->getActivePlayerId() !== $this->getCurrentPlayerId()) {
@@ -72,6 +67,9 @@ class Game extends \Table
         }
     }
 
+        public function getCardUniqueId (int $color, int $value) : int{
+            return (($color - 1) * 10 + ($value-1)) ;
+        }
 
     /**
      * Player action, example content.
@@ -86,11 +84,14 @@ class Game extends \Table
         $this->checkAction('actLeaveCard');
         $player_id = $this->getActivePlayerId();
         $this->_checkActivePlayer();
-        $currentCard = $this->_checkAndGetPlayerCard($card_id, $player_id);
 
-        $this->tableCardPosition++;
+        $tableCardPosition=$this->getGameStateValue("tableCardPosition")+1;
 
-        $this->cards->moveCard($card_id, 'table',$this->tableCardPosition);
+        $this->cards->moveCard($card_id, 'table',$tableCardPosition);
+
+        $this->setGameStateValue("tableCardPosition", $tableCardPosition);
+
+        $card=$this->cards->getCard($card_id);
 
         $this->setGameStateValue("lastCardPlay", (int)$card_id);
         $this->notifyAllPlayers(
@@ -98,6 +99,7 @@ class Game extends \Table
             clienttranslate('LeaveCard'),
             [
                 'card_id' => $card_id,
+                'card_type' => $this->getCardUniqueId((int)$card['type'],(int)$card['type_arg']),
                 'player_id' => $player_id,
             ]
         );
@@ -116,6 +118,7 @@ class Game extends \Table
         $lastCardplayed=false;
         $this->checkAction('actTakeCard');
         $player_id = $this->getActivePlayerId();
+        $this->_checkActivePlayer();
 
         $lastCardPlay = $this->getGameStateValue("lastCardPlay");
         $liste_tableCard_ids=explode(',',$tableCard_ids);
@@ -140,12 +143,10 @@ class Game extends \Table
                 }
             }
 
-            if ( SELF::getCardValue($lastCardPlay) == $value){
+            if ($lastCardplayed && ( SELF::getCardValue($lastCardPlay) == $value )){
                 $actionSuccess=true;
             }
-
         }
-
 
         if ($actionSuccess){
             if ($playerCard_id != -1){
@@ -166,51 +167,28 @@ class Game extends \Table
             if($this->cards->countCardInLocation('table')==0){
                 //SHOKOBA
                 $sql = "UPDATE player
-                    SET player_score = player_score +1 FROM board WHERE board_player=player_id
-                    )";
+                    SET player_score = player_score +1 WHERE player_id=".$player_id;
                 $this->DbQuery( $sql );
+
+                $newScores = $this->getCollectionFromDb( "SELECT player_id, player_score FROM player", true );
+                $this->notifyAllPlayers( "newScores", "", array(
+                    "scores" => $newScores
+                ) );
             }
+            if ($playerCard_id != -1){
+                $this->trace("next player");
+                $this->gamestate->nextState('nextPlayer');
+
+             }else{
+                $this->trace("replay");
+                $this->gamestate->nextState('playerTurn');
+             }
+        }else{
+            //ERROR need to inform player
         }
 
-
-
-
-        $this->gamestate->nextState('nextPlayer');
     }
 
-   function _checkAndGetPlayerCard($card_id, $player_id)
-    {
-        $playerCard = null;
-        $playerHand = $this->cards->getCardsInLocation('hand', $player_id);
-        foreach ($playerHand as $card) {
-            if ((int)$card['id'] === $card_id) {
-                $playerCard = $card;
-            }
-        }
-        if ($playerCard === null) {
-            throw new feException(self::_("Unexpected Error: Invalid Card"), true);
-        }
-
-        return $playerCard;
-    }
-
-
-    /**
-     * Game state arguments, example content.
-     *
-     * This method returns some additional information that is very specific to the `playerTurn` game state.
-     *
-     * @return array
-     * @see ./states.inc.php
-     */
-    public function argPlayerTurn(): array
-    {
-        // Get some values from the current game situation from the database.
-
-        return [
-            "playableCardsIds" => [1, 2],
-        ];
-    }
 
     /**
      * Compute and return the current game progression.
@@ -225,14 +203,41 @@ class Game extends \Table
     public function getGameProgression()
     {
         // TODO: compute and return the game progression
-
         return 0;
     }
 
 
+    public function score(): void{
+        $players = $this->loadPlayersBasicInfos();
 
+        $countCard=[];
+        $points=[];
 
+        //init score
+        foreach ($players as $player_id => $player) {
+            $points[$player_id]=0;
+        }
 
+        //max of each card type
+        for ($color = 1; $color <= 4; $color++) {
+            foreach ($players as $player_id => $player) {
+                $countCard[$player_id]=sizeof($this->cards->getCardsOfTypeInLocation($color,null,'taken',$player_id));
+            }
+            $maxs = array_keys($countCard, max($countCard));
+            $points[$maxs[0]]=$points[$maxs[0]]+1;
+        }
+
+        //max card
+        foreach ($players as $player_id => $player) {
+            $countCard[$player_id]=$this->cards->countCardInLocation('taken',$player_id);
+        }
+        $maxs = array_keys($countCard, max($countCard));
+        $points[$maxs[0]]=$points[$maxs[0]]+1;
+
+        foreach ($players as $player_id => $player) {
+            self::DbQuery(sprintf("UPDATE player SET player_score = player_score + %d WHERE player_id = '%s'", $points[$player_id], $player_id));
+        }
+    }
     /**
      * Game state action, example content.
      *
@@ -249,29 +254,34 @@ class Game extends \Table
 
         if ( $this->cards->countCardInLocation('hand')>0){
             $this->gamestate->nextState("playerTurn");
-        }else if($this->cards->countCardInLocation('deck')==0){
-/*
-            //diamond card  1pt
-            player_id=$this->cards->getCardsOfType('4')['card_location_arg'];
+        }else if($this->cards->countCardInLocation('deck')==0 && $this->cards->countCardInLocation('hand')==0){
 
-            $sql = "UPDATE player
-                SET player_score = player_score +1 FROM board WHERE board_player=player_id
-                )";
-            $this->DbQuery( $sql );
+//MISSING RULE NEED TAKE TABLE CARD TO LAST PLAYER
+            $this->score();
 
+            $newScores = self::getCollectionFromDb("SELECT player_id, player_score FROM player", true );
+            $this->notifyAllPlayers( "newScores", "", array(
+                    "scores" => $newScores
+                ) );
+            $endgame =false;
 
-            getCardsInLocation
+            ///// Test if this is the end of the game
+            foreach ( $newScores as $player_id => $score ) {
+                if ($score >= $this->getGameStateValue("finalScore") ) {
+                    // Trigger the end of the game !
+                    $endgame=true;
+                }
+            }
 
+            if($endgame){
+                $this->gamestate->nextState("endGame");
+            }else{
+                 $this->gamestate->nextState("newTable");
+            }
 
-*/
-
-            $this->gamestate->nextState("newTable");
         }else{
             $this->gamestate->nextState("newTurn");
         }
-
-
-
 
 
         // Go to another gamestate
@@ -289,6 +299,9 @@ class Game extends \Table
      *
      * @param int $from_version
      * @return void
+    }
+
+
      */
     public function upgradeTableDb($from_version)
     {
@@ -331,9 +344,6 @@ class Game extends \Table
         $result["players"] = $this->getCollectionFromDb(
             "SELECT `player_id` `id`, `player_score` `score` FROM `player`"
         );
-
-        // TODO: Gather all information about current game situation (visible by player $current_player_id).
-
 
         // Hands
         $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
@@ -391,7 +401,27 @@ class Game extends \Table
 
         // Init global values with their initial values.
 
+        $NumberOfPlayer=sizeof($players);
         $this->setGameStateInitialValue('lastCardPlay', -1);
+        $this->setGameStateInitialValue('HandSize', 3);
+        $this->setGameStateInitialValue('TableSize', 4);
+
+        switch ($NumberOfPlayer){
+            case 2:
+                $this->setGameStateInitialValue('finalScore', 7);
+                break;
+            case 3:
+                $this->setGameStateInitialValue('finalScore', 6);
+                break;
+            case 4:
+                //if (TEAM){
+                    //$this->setGameStateInitialValue('finalScore', 4);
+                //}else{
+                    $this->setGameStateInitialValue('finalScore', 7);
+                //}
+                break;
+        }
+
         $this->initializeDeck();
 
 
@@ -413,7 +443,6 @@ class Game extends \Table
     protected function getPlayerHand($player_id): array
     {
         $cards = $this->cards->getCardsInLocation('hand', $player_id);
-
         return $cards;
     }
 
@@ -427,7 +456,7 @@ class Game extends \Table
         $this->setGameStateValue("lastCardPlay", -1);
 
         // Deal cards to each player (and signal the UI to clean-up)
-        self::notifyAllPlayers('cleanUp', clienttranslate('${player_name} deals a new hand.'));
+        //self::notifyAllPlayers('cleanUp', clienttranslate('${player_name} deals a new hand.'));
 
 		// Create deck, shuffle it and give initial cards
         $players = self::loadPlayersBasicInfos();
@@ -450,8 +479,6 @@ class Game extends \Table
 
     function stNewHand() {
 
-
-		// Create deck, shuffle it and give initial cards
         $players = self::loadPlayersBasicInfos();
 
         $this->initializePlayersHand();
@@ -459,11 +486,10 @@ class Game extends \Table
         foreach($players as $player_id => $player) {
             // Notify player about his cards
 
-
             $hand = $this->getPlayerHand($player_id);
 
 //${cards}
-            self::notifyPlayer($player_id, 'newHand', clienttranslate('TOTO'), array(
+            self::notifyPlayer($player_id, 'newHand', clienttranslate(''), array(
 //                'cards' => self::listCardsForNotification($hand),
                 'hand' => $hand,
             ));
@@ -500,21 +526,14 @@ class Game extends \Table
         //Diamond
         $cards[] = ['type' => 4, 'type_arg' => 7, 'nbr' => 1];
 
-
         $this->cards->createCards($cards, 'deck');
 
     }
 
-
-//            $hand = $this->cards->pickCards(self::getGameStateValue('card_number_for_each_player'), 'deck', $player_id );
-//for variant in option
-
-
     protected function initializePlayersHand(): void
     {
-        $this->turnCounter=0;
         $players = $this->loadPlayersBasicInfos();
-        $handSize = $this->getHandSize();
+        $handSize = $this->getGameStateValue("HandSize");
         foreach ($players as $player_id => $player) {
             $this->cards->pickCards($handSize, 'deck', $player_id);
         }
@@ -522,12 +541,12 @@ class Game extends \Table
 
     protected function initializeGameTable(): void
     {
-        $tableSize = $this->getTableSize();
+        $tableSize = $this->getGameStateValue("TableSize");
 
         for ($i=0;$i<$tableSize;$i++){
             $this->cards->pickCardForLocation('deck', 'table',$i);
         }
-        $this->tableCardPosition=$tableSize;
+        $this->setGameStateValue("tableCardPosition", $tableSize);
     }
 
 
