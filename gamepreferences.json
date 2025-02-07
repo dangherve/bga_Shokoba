@@ -1,1 +1,17 @@
-{}
+{
+ "100": {
+    "name": "Card style",
+    "needReload": false,
+    "values": {
+      "1": {
+        "name": "Official graphic",
+        "img": "cards.png"
+      },
+      "2": {
+        "name": "limited visual",
+        "img": "dev_cards.png"
+      }
+    },
+    "default": 1
+  }
+}
