@@ -54,6 +54,7 @@ $gameinfos = [
     // the tie breaker to the players.
     // Note: if you are NOT using any tie breaker, leave the empty string.
     //
+    // No tie break player are equal
     // Example: 'tie_breaker_description' => totranslate( "Number of remaining cards in hand" ),
     'tie_breaker_description' => "",
 
