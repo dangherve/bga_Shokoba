@@ -1,1 +1,42 @@
-{}
+{
+  "table": {
+    "turns_number": {
+      "id": 10,
+      "name": "Number of turns",
+      "type": "int"
+    }
+  },
+  "player": {
+      "Saphir": {
+      "id": 10,
+      "name": "Number of point made with Saphir",
+      "type": "int"
+    },
+      "Rubis": {
+      "id": 11,
+      "name": "Number of point made with Rubis",
+      "type": "int"
+    },
+      "Emeraudes": {
+      "id": 12,
+      "name": "Number of point made with Emeraudes",
+      "type": "int"
+    },
+      "Diamond": {
+      "id": 13,
+      "name": "Number of point made with Diamond",
+      "type": "int"
+    },
+      "Total": {
+      "id": 14,
+      "name": "Number of point made with Total",
+      "type": "int"
+    },
+      "Shokoba": {
+      "id": 15,
+      "name": "Number of Shokoba",
+      "type": "int"
+    }
+  }
+}
+
