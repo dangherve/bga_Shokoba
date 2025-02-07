@@ -195,16 +195,16 @@ this.CardStyle(this.getGameUserPreference(100));
 
         */
 
-
         ///////////////////////////////////////////////////
         //// Player's action
 
 
         setChooseActionState: function () {
             this.changeMainBar(_('You must play a card or pass'));
-            this.unhiglightCards();
+//            this.unhiglightCards();
             this.SelectionType = 'null';
             this.playerHand.unselectAll();
+            this.tableCard.unselectAll();
         },
 
         onCardClick: function( card_id ){
@@ -305,7 +305,7 @@ this.CardStyle(this.getGameUserPreference(100));
                     this.setPlayCardState2();
                     this.tableCard.selectedItemId = items[0].id;
                 } else if (this.SelectionType === 'table') {
-                    this.setChooseActionState2();
+                    this.setChooseActionState();
                 }
             } else {
                 tableCard.unselectAll();
@@ -342,13 +342,24 @@ this.CardStyle(this.getGameUserPreference(100));
             this.bgaSetupPromiseNotifications();
         },
 
-
         notif_newHand: function(args) {
             for (var i in args.hand) {
                 var card = args.hand[i];
                 var color = card.type;
                 var value = card.type_arg;
                 this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+            }
+        },
+
+        notif_newTable: function(args) {
+
+            this.tableCard.removeAll();
+
+            for (var i in args.table) {
+                var card = args.table[i];
+                var color = card.type;
+                var value = card.type_arg;
+                this.tableCard.addToStockWithId(this.getCardUniqueId(color, value), card.id);
             }
         },
 
