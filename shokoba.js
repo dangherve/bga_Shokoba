@@ -26,16 +26,54 @@ function (dojo, declare) {
         constructor: function(){
             console.log('shokoba constructor');
 
+            //dev image
+            /*
             this.cardwidth = 100;
             this.cardheight = 100;
+            this.cards_url = g_gamethemeurl + 'img/cards.png';
+            */
+            //official image
+            this.cardwidth = 250;
+            this.cardheight = 250;
+            this.cards_url = g_gamethemeurl + 'img/cards.png';
 
             this.cards_per_row = 5;
-            this.cards_url = g_gamethemeurl + 'img/cards.png';
 
             this.playerHand = null;
             this.tableCard = null;
         },
 
+        CardStyle: function(value){
+             if (value == 1) {
+                this.cards_url = g_gamethemeurl + 'img/cards.png';
+             }else{
+                this.cards_url = g_gamethemeurl + 'img/dev_cards.png';
+             }
+        },
+
+        onChangeForCardStyle : function(event) {
+
+            var x = $('preference_control_100').selectedIndex;
+            var y = $('preference_control_100').options;
+            //this.getGameUserPreference(100) =
+
+            this.CardStyle(y[x].value)
+
+            dojo.query('.stockitem').forEach(function(node) {
+                dojo.style(node, 'background-image', this.cards_url);
+            });
+
+        },
+        /*
+         * Card styles management
+         */
+        getAvailableStyles: function() {
+            var available_styles = [];
+            dojo.query('#preference_control_100 > option').forEach(function(node) {
+                available_styles.push(node.innerHTML)
+            });
+            return available_styles;
+        },
         /*
             setup:
 
@@ -65,8 +103,13 @@ function (dojo, declare) {
             var stock = new ebg.stock();
             stock.create(this, $('player-tables'), this.cardwidth, this.cardheight);
 
+this.CardStyle(this.getGameUserPreference(100));
+
+
             stock.image_items_per_row = 10;
             dojo.connect(stock, 'onChangeSelection', this, 'onTableSelectionChanged');
+            dojo.connect($('preference_control_100'), 'onchange', this, 'onChangeForCardStyle');
+            dojo.connect($('preference_fontrol_100'), 'onchange', this, 'onChangeForCardStyle');
 
             for(var color=1;color<=4;color++) {
                 for(var value=1;value<=10;value++) {
