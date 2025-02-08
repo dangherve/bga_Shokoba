@@ -305,10 +305,12 @@ class Game extends \Table
                 $countCard[$color][$player_id]=sizeof($this->cards->getCardsOfTypeInLocation($color,null,'taken',$player_id));
             }
             $maxs = array_keys($countCard[$color], max($countCard[$color]));
-            $points[$maxs[0]]=$points[$maxs[0]]+1;
-            $countCard[$color][$maxs[0]]=(string)$countCard[$color][$maxs[0]].'✓';
-            $this->incStat(1,$this->translatedColors[$color],$maxs[0]);
 
+            if(sizeof($maxs)==1){
+                $points[$maxs[0]]=$points[$maxs[0]]+1;
+                $countCard[$color][$maxs[0]]=(string)$countCard[$color][$maxs[0]].'✓';
+                $this->incStat(1,$this->translatedColors[$color],$maxs[0]);
+            }
         }
 
         //max card
@@ -317,9 +319,13 @@ class Game extends \Table
             $countCard[0][$player_id]=$this->cards->countCardInLocation('taken',$player_id);
         }
         $maxs = array_keys($countCard[0], max($countCard[0]));
-        $points[$maxs[0]]=$points[$maxs[0]]+1;
-        $countCard[0][$maxs[0]]=(string)$countCard[0][$maxs[0]].'✓';
-        $this->incStat(1,$this->translatedColors[0],$maxs[0]);
+
+        if(sizeof($maxs)==1){
+            $points[$maxs[0]]=$points[$maxs[0]]+1;
+            $countCard[0][$maxs[0]]=(string)$countCard[0][$maxs[0]].'✓';
+            $this->incStat(1,$this->translatedColors[0],$maxs[0]);
+        }
+
 
         foreach ($players as $player_id => $player) {
             // Header line
@@ -334,7 +340,6 @@ class Game extends \Table
             $rubisRow[] = $countCard[2][$player_id];
             $EmeraudesRow[] = $countCard[3][$player_id];
             $DiamondRow[] = $countCard[4][$player_id];
-
 
         }
 
@@ -509,7 +514,6 @@ class Game extends \Table
 
         $this->initializeDeck();
 
-
         // Init game statistics.
         //
         $this->initStat("table", "turns_number", 0);
@@ -552,8 +556,6 @@ class Game extends \Table
         $this->notifyAllPlayers( 'newTable', '', array(
             'table' => $this->cards->getCardsInLocation('table'),
         ));
-
-
 
        $this->gamestate->nextState('newTurn');
     }

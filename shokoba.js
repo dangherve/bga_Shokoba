@@ -97,17 +97,21 @@ function (dojo, declare) {
 
             document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
                 <div id="player-tables"></div>
-                <div id="debug"></div>
+                <div id="myhand_wrap" class="whiteblock">
+                <div id="hand"></div>
+                </div>
             `);
 
-            var stock = new ebg.stock();
-            stock.create(this, $('player-tables'), this.cardwidth, this.cardheight);
-
+            var stock_table = new ebg.stock();
+            stock_table.create(this, $('player-tables'), this.cardwidth, this.cardheight);
+            stock_table.setSelectionMode(2);
+            stock_table.setSelectionAppearance('class');
 this.CardStyle(this.getGameUserPreference(100));
+            stock_table.item_margin=10;
+            stock_table.centerItems = true;
 
-
-            stock.image_items_per_row = 10;
-            dojo.connect(stock, 'onChangeSelection', this, 'onTableSelectionChanged');
+            stock_table.image_items_per_row = 10;
+            dojo.connect(stock_table, 'onChangeSelection', this, 'onTableSelectionChanged');
             dojo.connect($('preference_control_100'), 'onchange', this, 'onChangeForCardStyle');
             dojo.connect($('preference_fontrol_100'), 'onchange', this, 'onChangeForCardStyle');
 
@@ -115,7 +119,7 @@ this.CardStyle(this.getGameUserPreference(100));
                 for(var value=1;value<=10;value++) {
                     // Build card type id
                     var card_id = this.getCardUniqueId(color, value);
-                    stock.addItemType(card_id, null, this.cards_url, card_id);
+                    stock_table.addItemType(card_id, null, this.cards_url, card_id);
                 }
             }
 
@@ -123,42 +127,35 @@ this.CardStyle(this.getGameUserPreference(100));
                 var card = this.gamedatas['table'][i];
                 var value = card.type_arg;
                 var color=card.type;
-                stock.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+                stock_table.addToStockWithId(this.getCardUniqueId(color, value), card.id);
             }
 
-            this.tableCard = stock;
+            this.tableCard = stock_table;
 
             var player_number = Object.keys(gamedatas.players).length;
 
-            document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
-                <div id="myhand_wrap" class="whiteblock">
-                 <div id="hand"></div>
-                <div id="D"></div>
-                </div>
-            `);
+            var stock_player = new ebg.stock();
+            stock_player.create(this, $('hand'), this.cardwidth, this.cardheight);
 
-            var stock = new ebg.stock();
-            stock.create(this, $('hand'), this.cardwidth, this.cardheight);
-
-            stock.setSelectionMode(1); // By default, no card can be selected. Some states will change that
+            stock_player.setSelectionMode(1);
 
             // check diff
-            stock.setSelectionAppearance('class');
+            stock_player.setSelectionAppearance('class');
+            stock_player.item_margin=10;
+            stock_player.centerItems = true;
 
-            stock.centerItems = true;
-
-            stock.image_items_per_row = 10;
+            stock_player.image_items_per_row = 10;
 
             //stock.onItemCreate = dojo.hitch(this, 'onCreateNewCard');
 
-            dojo.connect(stock, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
+            dojo.connect(stock_player, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
 
             var position_in_sprite = 0;
             for(var color=1;color<=4;color++) {
                 for(var value=1;value<=10;value++) {
                     // Build card type id
                     var card_id = this.getCardUniqueId(color, value);
-                    stock.addItemType(card_id, null, this.cards_url, card_id);
+                    stock_player.addItemType(card_id, null, this.cards_url, card_id);
                     position_in_sprite++;
                 }
             }
@@ -168,9 +165,9 @@ this.CardStyle(this.getGameUserPreference(100));
                 var card = this.gamedatas['hand'][i];
                 var value = card.type_arg;
                 var color=card.type;
-                stock.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+                stock_player.addToStockWithId(this.getCardUniqueId(color, value), card.id);
             }
-            this.playerHand = stock;
+            this.playerHand = stock_player;
 
 
             // Setup game notifications to handle (see "setupNotifications" method below)
@@ -202,7 +199,7 @@ this.CardStyle(this.getGameUserPreference(100));
         setChooseActionState: function () {
             this.changeMainBar(_('You must play a card or pass'));
 //            this.unhiglightCards();
-            this.SelectionType = 'null';
+            this.SelectionType = 'hand';
             this.playerHand.unselectAll();
             this.tableCard.unselectAll();
         },
