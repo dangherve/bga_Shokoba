@@ -123,6 +123,9 @@
 
 }
 
+.stockitem_selected {
+    border: 3px solid red ! important;
+}
 
 .player-tables{
     border: 1px solid red;
