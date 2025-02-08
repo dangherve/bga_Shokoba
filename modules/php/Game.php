@@ -93,10 +93,10 @@ class Game extends \Table
         $card=$this->cards->getCard($card_id);
 
         $this->setGameStateValue("lastCardPlay", (int)$card_id);
-        //clienttranslate('leave card '.$card['type']." ".$card['type_arg'])
+
         $this->notifyAllPlayers(
             'leaveCard',
-            '',
+            clienttranslate($this->getActivePlayerName().' lays a '.$card['type_arg']." ".$this->translatedColors[$card['type']].' card into the center of the table.'),
             [
                 'card_id' => $card_id,
                 'card_type' => $this->getCardUniqueId((int)$card['type'],(int)$card['type_arg']),
@@ -139,6 +139,8 @@ class Game extends \Table
         $lastCardPlay = $this->getGameStateValue("lastCardPlay");
         $liste_tableCard_ids=explode(',',$tableCard_ids);
 
+        $message=$this->getActivePlayerName().' plays a ';
+
         //player take card(s) with one of his
         if ($playerCard_id != -1){
             $value=0;
@@ -148,9 +150,14 @@ class Game extends \Table
                 throw new \BgaUserException(self::_("You did not select any card on table"), true);
             }
 
+            $card=$this->cards->getCard($playerCard_id);
+            $message.=$card['type_arg']." ".$this->translatedColors[$card['type']].' card into the center of the table and collects';
+
             // calculate total value
             foreach ($liste_tableCard_ids as $tableCard_id){
                 $value=$value+ (int)SELF::getCardValue($tableCard_id);
+                $card=$this->cards->getCard($tableCard_id);
+                $message.=$card['type_arg']." ".$this->translatedColors[$card['type']];
             }
 
             //check if value is a match
@@ -162,14 +169,20 @@ class Game extends \Table
         }elseif (($lastCardPlay != -1) && (strlen($tableCard_ids)!=0)){
             $value=0;
 
+            $messageT='';
             //calculate value and check if last card played
             foreach ($liste_tableCard_ids as $tableCard_id) {
+                $card=$this->cards->getCard($tableCard_id);
                 if ($tableCard_id != $lastCardPlay){
                     $value=$value+(int)SELF::getCardValue($tableCard_id);
+                    $messageT.=$card['type_arg']." ".$this->translatedColors[$card['type']]." ";
                 }else{
                     $lastCardplayed=true;
+                    $message=$card['type_arg']." ".$this->translatedColors[$card['type']].' card into the center of the table and collects ';
                 }
             }
+
+            $message.=$messageT;
 
             //last card played check
             if(!$lastCardplayed){
@@ -197,7 +210,7 @@ class Game extends \Table
 
         //update cards
         $this->notifyAllPlayers(
-            'takeCard','',
+            'takeCard',clienttranslate($message),
             [
                 'tableCard_id' => $liste_tableCard_ids,
                 'playerCard_id' => $playerCard_id,
@@ -298,7 +311,8 @@ class Game extends \Table
         foreach ($players as $player_id => $player) {
             $points[$player_id]=0;
         }
-
+//"${player_name} earns 1 gemstone for the most diamonds (3 cards)"
+//"${player_1} and ${player_2} are tied on number of rubies, no gemstones for rubies this round."
         //max of each card type
         for ($color = 1; $color <= 4; $color++) {
             foreach ($players as $player_id => $player) {
@@ -345,7 +359,7 @@ class Game extends \Table
 
         $table = [$nameRow,$saphirRow,$rubisRow,$EmeraudesRow,$DiamondRow,$totalRow];
 
-        $this->notifyAllPlayers("tableWindow", '', [
+        $this->notifyAllPlayers("tableWindow", clienttranslate("There are no more cards to deal. The round ends."), [
             "id" => 'finalScoring',
             "title" => "",
             "table" => $table,
@@ -553,7 +567,7 @@ class Game extends \Table
         $this->initializeGameTable();
 
         // Notify player about his cards
-        $this->notifyAllPlayers( 'newTable', '', array(
+        $this->notifyAllPlayers( 'newTable', clienttranslate("A new round starts."), array(
             'table' => $this->cards->getCardsInLocation('table'),
         ));
 
