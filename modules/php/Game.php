@@ -46,6 +46,11 @@ class Game extends \Table
             "lastTakenPlayer" => 14,
             "finalScore" => 15,
 
+            //game option
+            "teamPLay" =>100,
+            "advancedTeamPlay" =>101,
+            "advancedCard" =>102,
+
         ]);
 
         $this->cards = $this->getNew("module.common.deck");
@@ -141,6 +146,16 @@ class Game extends \Table
 
         $message=$this->getActivePlayerName().' plays a ';
 
+        $cardsOnTable = $this->cards->getCardsInLocation('table');
+
+        $cardsValueOnTable=[];
+        $cardsTaken=[];
+
+        foreach($cardsOnTable as $card){
+            $cardsValueOnTable[]=(int)$card['type_arg'];
+        }
+
+
         //player take card(s) with one of his
         if ($playerCard_id != -1){
             $value=0;
@@ -156,6 +171,7 @@ class Game extends \Table
             // calculate total value
             foreach ($liste_tableCard_ids as $tableCard_id){
                 $value=$value+ (int)SELF::getCardValue($tableCard_id);
+                $cardsTaken[]=(int)SELF::getCardValue($tableCard_id);
                 $card=$this->cards->getCard($tableCard_id);
                 $message.=$card['type_arg']." ".$this->translatedColors[$card['type']];
             }
@@ -163,6 +179,13 @@ class Game extends \Table
             //check if value is a match
             if($value != SELF::getCardValue($playerCard_id)){
                 throw new \BgaUserException(self::_("Taken card(s) value did not match played card"), true);
+            }
+
+            if (($this->getGameStateValue('advancedCard') == 2) &&
+                in_array((int)SELF::getCardValue($playerCard_id),$cardsValueOnTable) &&
+                !in_array((int)SELF::getCardValue($playerCard_id),$cardsTaken)
+            ){
+                throw new \BgaUserException(self::_("You need to take the card of the same value first"), true);
             }
 
         //take with last card
@@ -176,6 +199,7 @@ class Game extends \Table
                 if ($tableCard_id != $lastCardPlay){
                     $value=$value+(int)SELF::getCardValue($tableCard_id);
                     $messageT.=$card['type_arg']." ".$this->translatedColors[$card['type']]." ";
+                    $cardsTaken[]=(int)SELF::getCardValue($tableCard_id);
                 }else{
                     $lastCardplayed=true;
                     $message=$card['type_arg']." ".$this->translatedColors[$card['type']].' card into the center of the table and collects ';
@@ -193,6 +217,14 @@ class Game extends \Table
             if ( (int)SELF::getCardValue($lastCardPlay) != $value ){
                 throw new \BgaUserException(self::_("Taken card(s) value did not match the last played card"), true);
             }
+
+            if (($this->getGameStateValue('advancedCard') == 2) &&
+                in_array((int)SELF::getCardValue($lastCardPlay),$cardsValueOnTable) &&
+                !in_array((int)SELF::getCardValue($lastCardPlay),$cardsTaken)
+            ){
+                throw new \BgaUserException(self::_("You need to take the card of the same value first"), true);
+            }
+
         }else{
             //no card selected
             throw new \BgaUserException(self::_("You did not select any card in your hand or the last played card"), true);
