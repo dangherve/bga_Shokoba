@@ -1,3 +1,35 @@
 {
-
+  "100": {
+    "name": "Team play need 4 player (NOT IMPLEMENTED YET)",
+    "values": {
+      "1": {
+        "name": "Off"
+      },
+      "2": {
+        "name": "On"
+      }
+    }
+  },
+  "101": {
+    "name": "All card distributed nead Team play (NOT IMPLEMENTED YET)",
+    "values": {
+      "1": {
+        "name": "Off"
+      },
+      "2": {
+        "name": "On"
+      }
+    }
+  },
+  "102": {
+    "name": "Need to take same value first",
+    "values": {
+      "1": {
+        "name": "Off"
+      },
+      "2": {
+        "name": "On"
+      }
+    }
+  }
 }
