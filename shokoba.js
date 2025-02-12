@@ -35,7 +35,13 @@ function (dojo, declare) {
             //official image
             this.cardwidth = 250;
             this.cardheight = 250;
-            this.cards_url = g_gamethemeurl + 'img/cards.png';
+            this.cards_url = null;
+            //g_gamethemeurl + 'img/cards.png';
+
+
+
+            this.styles = null;
+            this.current_style_id = null;
 
             this.cards_per_row = 5;
 
@@ -43,27 +49,97 @@ function (dojo, declare) {
             this.tableCard = null;
         },
 
-        CardStyle: function(value){
-             if (value == 1) {
-                this.cards_url = g_gamethemeurl + 'img/cards.png';
-             }else{
-                this.cards_url = g_gamethemeurl + 'img/dev_cards.png';
-             }
-        },
 
         onChangeForCardStyle : function(event) {
 
-            var x = $('preference_control_100').selectedIndex;
-            var y = $('preference_control_100').options;
-            //this.getGameUserPreference(100) =
+            var select = event.currentTarget;
+            var current_style = 'shokoba_' + this.current_style_id;
+            var new_style_id = select.options[select.selectedIndex].value ;
+            var new_style = 'shokoba_' + new_style_id;
 
-            this.CardStyle(y[x].value)
-
-            dojo.query('.stockitem').forEach(function(node) {
-                dojo.style(node, 'background-image', this.cards_url);
+            // Set that new style as the player preference
+            dojo.query('#preference_control_100 > option[value="' + (new_style_id + 1) + '"], #preference_fontrol_100 > option[value="' + (new_style_id + 1) + '"]').forEach(function(node) {
+                dojo.attr(node, 'selected', true);
             });
 
+            // Change style of cards on table
+            dojo.query('.' + current_style).addClass(new_style).removeClass(current_style);
+
+            // Set the new style for cards which will appear in the stocks
+            var stocks = [this.playerHand, this.tableCard];
+            for (i in stocks) {
+                var stock = stocks[i];
+                for (j in stock.item_type) {
+                    var item = stock.item_type[j];
+                    if (j == 0) {
+                        var image = item.image.replace(current_style, new_style);
+                    }
+                    item.image = image;
+                }
+                stock.updateDisplay();
+            }
+
+            // Change style of the current visible cards in the stocks
+            image = 'url(' + image + ')';
+            dojo.query('.stockitem').forEach(function(node) {
+                dojo.style(node, 'background-image', image);
+            });
+
+            // Change the name of the deck used
+            //$('current_style').innerHTML = _(this.styles[new_style_id]);
+
+            this.current_style_id = new_style_id;
+
         },
+
+
+      createPlayerStock: function (data) {
+        this.cardMap = {};
+        this.playerPile = [];
+        var count = 0;
+        for (var player_id in data.players) count++; // IE8 compatibility... sad :'(
+        var p =1
+        for (var player_id in data.players) {
+            var stock_player = new ebg.stock();
+            stock_player.create(this, $('hand_' + p), this.cardwidth, this.cardheight);
+
+p=p+1
+            stock_player.setSelectionAppearance('class');
+            //active player -> 1
+
+            stock_player.item_margin=10;
+            stock_player.image_items_per_row = 10;
+
+            this.playerPile[player_id] = stock_player;
+            if (Number(player_id) === this.playerId) {
+                stock_player.setSelectionMode(1);
+            } else {
+                dojo.connect(stock_player, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
+                stock_player.setSelectionMode(0);
+            }
+
+            var position_in_sprite = 0;
+            for(var color=1;color<=4;color++) {
+                for(var value=1;value<=10;value++) {
+                    // Build card type id
+                    var card_id = this.getCardUniqueId(color, value);
+                    stock_player.addItemType(card_id, null, this.cards_url, card_id);
+                    position_in_sprite++;
+                }
+            }
+
+            // Cards in player's hand
+            for(var i in this.gamedatas['hand'+ player_id]) {
+                var card = this.gamedatas['hand'+ player_id][i];
+                var value = card.type_arg;
+                var color=card.type;
+                stock_player.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+            }
+            this.playerHand = stock_player;
+
+        }
+      },
+
         /*
          * Card styles management
          */
@@ -94,21 +170,84 @@ function (dojo, declare) {
             this.playerId = Number(gamedatas.player_id);
             this.playerCard = { drag: 'none', selectedItemId: null, nodes: [] };
             this.tableCard = { drag: 'none', selectedItemId: null, nodes: [] };
-
+/*
             document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
                 <div id="player-tables"></div>
                 <div id="myhand_wrap" class="whiteblock">
                 <div id="hand"></div>
                 </div>
             `);
+*/
+
+            switch(gamedatas['nbplayer']) {
+                case 4:
+                    document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
+                        <div id="player1_4" class="whiteblock">
+                        <div id="hand_1"></div>
+                        </div>
+                        <div id="player2_4" class="whiteblock">
+                        <div id="hand_2"></div>
+                        </div>
+                        <div id="player-tables"></div>
+                        <div id="player3_4" class="whiteblock">
+                        <div id="hand_3"></div>
+                        </div>
+                        <div id="player4_4" class="whiteblock">
+                        <div id="hand_4"></div>
+                        </div>
+                <div id="myhand_wrap" class="whiteblock">
+                <div id="hand"></div>
+                </div>
+                    `);
+                     break;
+                case 3:
+                    document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
+                        <div id="myhand1_3_wrap" class="whiteblock">
+                        <div id="hand_1"></div>
+                        </div>
+                        <div id="myhand2_3_wrap" class="whiteblock">
+                        <div id="hand_2"></div>
+                        </div>
+                        <div id="player-tables"></div>
+                        <div id="myhand3_3_wrap" class="whiteblock">
+                        <div id="hand_3"></div>
+                        </div>
+                <div id="myhand_wrap" class="whiteblock">
+                <div id="hand"></div>
+                </div>
+                    `);
+                     break;
+                case 2:
+                    document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
+                        <div id="myhand1_2_wrap" class="whiteblock">
+                        <div id="hand_1"></div>
+                        </div>
+                        <div id="player-tables"></div>
+                        <div id="myhand2_2_wrap" class="whiteblock">
+                        <div id="hand_2"></div>
+                        </div>
+                <div id="myhand_wrap" class="whiteblock">
+                <div id="hand"></div>
+                </div>
+                    `);
+                     break;
+            }
+
 
             var stock_table = new ebg.stock();
             stock_table.create(this, $('player-tables'), this.cardwidth, this.cardheight);
             stock_table.setSelectionMode(2);
             stock_table.setSelectionAppearance('class');
-this.CardStyle(this.getGameUserPreference(100));
+
+            this.styles = this.getAvailableStyles();
+
+            this.current_style_id = this.prefs[100].value;
+
+
             stock_table.item_margin=10;
             stock_table.centerItems = true;
+
+            this.cards_url = g_gamethemeurl + 'img/shokoba_'+this.current_style_id+'.png';
 
             stock_table.image_items_per_row = 10;
             dojo.connect(stock_table, 'onChangeSelection', this, 'onTableSelectionChanged');
@@ -132,7 +271,8 @@ this.CardStyle(this.getGameUserPreference(100));
 
             this.tableCard = stock_table;
 
-            var player_number = Object.keys(gamedatas.players).length;
+this.createPlayerStock(gamedatas);
+
 
             var stock_player = new ebg.stock();
             stock_player.create(this, $('hand'), this.cardwidth, this.cardheight);

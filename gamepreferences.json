@@ -4,12 +4,23 @@
     "needReload": false,
     "values": {
       "1": {
-        "name": "Official graphic",
-        "img": "cards.png"
+        "name": "Official graphic"
       },
       "2": {
-        "name": "limited visual",
-        "img": "dev_cards.png"
+        "name": "limited visual"
+      }
+    },
+    "default": 1
+  },
+ "101": {
+    "name": "Visaul",
+    "needReload": false,
+    "values": {
+      "1": {
+        "name": "compact"
+      },
+      "2": {
+        "name": "full"
       }
     },
     "default": 1

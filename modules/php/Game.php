@@ -24,6 +24,11 @@ class Game extends \Table
 {
     private static array $CARD_TYPES;
 
+    //
+    private int $defautColor = 3;
+    private int $defautValue = 1;
+
+
     /**
      * Your global variables labels:
      *
@@ -55,6 +60,7 @@ class Game extends \Table
 
         $this->cards = $this->getNew("module.common.deck");
         $this->cards->init("card");
+
 
         $this->translatedColors = [
             0 => clienttranslate('Total'),
@@ -480,6 +486,19 @@ class Game extends \Table
             "SELECT `player_id` `id`, `player_score` `score` FROM `player`"
         );
 
+
+        // Hands
+        $players = $this->loadPlayersBasicInfos();
+        $result['nbplayer']=sizeof($players);
+        foreach ($players as $other_id => $other) {
+            $isSelf = ((int) $other_id) === ((int) $player_id);
+            $isSpectator = !isset($players[$player_id]);
+
+            $shouldCardsBeHidden = !($isSelf || $isSpectator);
+            $result['hand' . $other_id] = $this->getPlayerHand($other_id, $shouldCardsBeHidden);
+        }
+
+
         // Hands
         $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
 
@@ -575,9 +594,18 @@ class Game extends \Table
     }
 
 
-    protected function getPlayerHand($player_id): array
+    protected function getPlayerHand($player_id, bool $shouldCardsBeHidden = false): array
     {
         $cards = $this->cards->getCardsInLocation('hand', $player_id);
+
+        foreach ($cards as $i => $value) {
+            if ($shouldCardsBeHidden) {
+                $cards[$i]['type'] = $this->defautColor;
+                $cards[$i]['type_arg'] = $this->defautValue;
+            }
+        }
+
+
         return $cards;
     }
 
@@ -616,14 +644,19 @@ class Game extends \Table
 
         foreach($players as $player_id => $player) {
             // Notify player about his cards
-            $hand = $this->getPlayerHand($player_id);
-            self::notifyPlayer($player_id, 'newHand', '', array(
-                'hand' => $hand,
+
+            self::notifyallPlayers('newHand', '', array(
+                'player_id' => $player_id,
+                'hand' => $this->getPlayerHand($player_id, true),
             ));
 
-        }
+ $hand = $this->getPlayerHand($player_id);
 
-       $this->gamestate->nextState('playerTurn');
+            self::notifyPlayer($player_id, 'newHandPrivate', '', array(
+                'hand' => $hand,
+            ));
+        }
+        $this->gamestate->nextState('playerTurn');
     }
 
     // Create and shuffle deck
