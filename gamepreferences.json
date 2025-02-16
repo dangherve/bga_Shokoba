@@ -13,7 +13,7 @@
     "default": 1
   },
  "101": {
-    "name": "Visaul",
+    "name": "Visual",
     "needReload": false,
     "values": {
       "1": {
@@ -23,6 +23,6 @@
         "name": "full"
       }
     },
-    "default": 1
+    "default": 2
   }
 }

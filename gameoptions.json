@@ -1,6 +1,6 @@
 {
   "100": {
-    "name": "Team play need 4 player (NOT IMPLEMENTED YET)",
+    "name": "Team play need 4 player",
     "values": {
       "1": {
         "name": "Off"
@@ -8,10 +8,26 @@
       "2": {
         "name": "On"
       }
+    },
+    "displaycondition": [
+      {
+        "type": "minplayers",
+        "value": 4
+      }
+    ],
+    "startcondition": {
+        "1": [],
+        "2": [
+            {
+                "type": "minplayers",
+                "value": 4,
+                "message": "Team option required 4 player"
+            }
+        ]
     }
   },
   "101": {
-    "name": "All card distributed nead Team play (NOT IMPLEMENTED YET)",
+    "name": "All card distributed nead Team play",
     "values": {
       "1": {
         "name": "Off"
@@ -19,7 +35,14 @@
       "2": {
         "name": "On"
       }
-    }
+    },
+    "displaycondition": [
+      {
+        "type": "otheroption",
+        "id": 100,
+        "value": 2
+      }
+    ]
   },
   "102": {
     "name": "Need to take same value first",

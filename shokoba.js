@@ -39,14 +39,15 @@ function (dojo, declare) {
             //g_gamethemeurl + 'img/cards.png';
 
 
-
             this.styles = null;
             this.current_style_id = null;
 
             this.cards_per_row = 5;
 
+            this.playersHand = [];
             this.playerHand = null;
             this.tableCard = null;
+            this.visual=1;
         },
 
 
@@ -66,7 +67,9 @@ function (dojo, declare) {
             dojo.query('.' + current_style).addClass(new_style).removeClass(current_style);
 
             // Set the new style for cards which will appear in the stocks
-            var stocks = [this.playerHand, this.tableCard];
+            var stocks = [this.tableCard,this.playerHand];
+            stocks.concat( this.playersHand)
+
             for (i in stocks) {
                 var stock = stocks[i];
                 for (j in stock.item_type) {
@@ -92,53 +95,90 @@ function (dojo, declare) {
 
         },
 
+        ChangeVisual : function(){
 
-      createPlayerStock: function (data) {
-        this.cardMap = {};
-        this.playerPile = [];
-        var count = 0;
-        for (var player_id in data.players) count++; // IE8 compatibility... sad :'(
-        var p =1
-        for (var player_id in data.players) {
-            var stock_player = new ebg.stock();
-            stock_player.create(this, $('hand_' + p), this.cardwidth, this.cardheight);
+            var nodeList=document.querySelectorAll(".player")
 
-p=p+1
-            stock_player.setSelectionAppearance('class');
-            //active player -> 1
-
-            stock_player.item_margin=10;
-            stock_player.image_items_per_row = 10;
-
-            this.playerPile[player_id] = stock_player;
-            if (Number(player_id) === this.playerId) {
-                stock_player.setSelectionMode(1);
-            } else {
-                dojo.connect(stock_player, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
-                stock_player.setSelectionMode(0);
-            }
-
-            var position_in_sprite = 0;
-            for(var color=1;color<=4;color++) {
-                for(var value=1;value<=10;value++) {
-                    // Build card type id
-                    var card_id = this.getCardUniqueId(color, value);
-                    stock_player.addItemType(card_id, null, this.cards_url, card_id);
-                    position_in_sprite++;
+            if (this.visual==2){
+                 document.getElementById("myhand_wrap").style.display = "none";
+                for (var index = 0; index < nodeList.length; index++) {
+                    nodeList[index].style.display = "block";
                 }
+
+                for (i in this.playersHand) {
+                    var stock = this.playersHand[i];
+                    stock.updateDisplay();
+                }
+            }else{
+                 document.getElementById("myhand_wrap").style.display = "block";
+                for (var index = 0; index < nodeList.length; index++) {
+                    nodeList[index].style.display = "none";
+                }
+                this.playerHand.updateDisplay();
             }
 
-            // Cards in player's hand
-            for(var i in this.gamedatas['hand'+ player_id]) {
-                var card = this.gamedatas['hand'+ player_id][i];
-                var value = card.type_arg;
-                var color=card.type;
-                stock_player.addToStockWithId(this.getCardUniqueId(color, value), card.id);
-            }
-            this.playerHand = stock_player;
+        },
 
-        }
-      },
+        onChangeVisual : function(event) {
+
+            var select = event.currentTarget;
+            this.visual = select.options[select.selectedIndex].value ;
+
+            this.ChangeVisual();
+        },
+
+        /*
+        * Create players card
+        */
+        createPlayerStock: function (data) {
+            this.cardMap = {};
+            this.playerPile = [];
+            var count = 0;
+            for (var player_id in data.players) count++; // IE8 compatibility... sad :'(
+            var p =1
+            for (var player_id in data.players) {
+                var stock_player = new ebg.stock();
+                document.getElementById('hand_' + p).setAttribute("id", 'hand_' + player_id);
+                p=p+1
+
+                stock_player.create(this, $('hand_' + player_id), this.cardwidth, this.cardheight);
+
+                stock_player.setSelectionAppearance('class');
+                //active player -> 1
+
+                stock_player.item_margin=10;
+                stock_player.image_items_per_row = 10;
+
+                this.playerPile[player_id] = stock_player;
+                if (Number(player_id) === this.playerId) {
+                    stock_player.setSelectionMode(1);
+                    dojo.connect(stock_player, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
+
+                } else {
+                    stock_player.setSelectionMode(0);
+                }
+
+                var position_in_sprite = 0;
+                for(var color=1;color<=4;color++) {
+                    for(var value=1;value<=10;value++) {
+                        // Build card type id
+                        var card_id = this.getCardUniqueId(color, value);
+                        stock_player.addItemType(card_id, null, this.cards_url, card_id);
+                        position_in_sprite++;
+                    }
+                }
+
+                // Cards in player's hand
+                for(var i in this.gamedatas['hand'+ player_id]) {
+                    var card = this.gamedatas['hand'+ player_id][i];
+                    var value = card.type_arg;
+                    var color=card.type;
+                    stock_player.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+                }
+                this.playersHand[player_id] = stock_player;
+
+            }
+        },
 
         /*
          * Card styles management
@@ -170,69 +210,63 @@ p=p+1
             this.playerId = Number(gamedatas.player_id);
             this.playerCard = { drag: 'none', selectedItemId: null, nodes: [] };
             this.tableCard = { drag: 'none', selectedItemId: null, nodes: [] };
-/*
-            document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
-                <div id="player-tables"></div>
-                <div id="myhand_wrap" class="whiteblock">
-                <div id="hand"></div>
-                </div>
-            `);
-*/
 
             switch(gamedatas['nbplayer']) {
                 case 4:
                     document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
-                        <div id="player1_4" class="whiteblock">
-                        <div id="hand_1"></div>
+                        <div class="whiteblock player" id="player1_4" class="whiteblock">
+                        <div class="hand" id="hand_1"></div>
                         </div>
-                        <div id="player2_4" class="whiteblock">
-                        <div id="hand_2"></div>
+                        <div class="whiteblock player" id="player2_4" class="whiteblock">
+                        <div class="hand" id="hand_2"></div>
                         </div>
+                        <div id="deck"></div>
                         <div id="player-tables"></div>
-                        <div id="player3_4" class="whiteblock">
-                        <div id="hand_3"></div>
+                        <div class="whiteblock player" id="player3_4" class="whiteblock">
+                        <div class="hand" id="hand_3"></div>
                         </div>
-                        <div id="player4_4" class="whiteblock">
-                        <div id="hand_4"></div>
+                        <div class="whiteblock player" id="player4_4" class="whiteblock">
+                        <div class="hand" id="hand_4"></div>
                         </div>
-                <div id="myhand_wrap" class="whiteblock">
-                <div id="hand"></div>
-                </div>
+                        <div id="myhand_wrap" class="whiteblock">
+                        <div class="hand" id="hand"></div>
+                        </div>
                     `);
                      break;
                 case 3:
                     document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
-                        <div id="myhand1_3_wrap" class="whiteblock">
-                        <div id="hand_1"></div>
+                        <div class="whiteblock player" id="player1_3" class="whiteblock">
+                        <div class="hand" id="hand_1"></div>
                         </div>
-                        <div id="myhand2_3_wrap" class="whiteblock">
-                        <div id="hand_2"></div>
+                        <div id="deck"></div>
+                        <div class="whiteblock player" id="player2_3" class="whiteblock">
+                        <div class="hand" id="hand_2"></div>
                         </div>
                         <div id="player-tables"></div>
-                        <div id="myhand3_3_wrap" class="whiteblock">
-                        <div id="hand_3"></div>
+                        <div class="whiteblock player" id="player3_3" class="whiteblock">
+                        <div class="hand" id="hand_3"></div>
                         </div>
-                <div id="myhand_wrap" class="whiteblock">
-                <div id="hand"></div>
-                </div>
+                        <div id="myhand_wrap" class="whiteblock">
+                        <div class="hand" id="hand"></div>
+                        </div>
                     `);
                      break;
                 case 2:
                     document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
-                        <div id="myhand1_2_wrap" class="whiteblock">
-                        <div id="hand_1"></div>
+                        <div class="whiteblock player" id="player1_2" class="whiteblock">
+                        <div class="hand" id="hand_1"></div>
                         </div>
+                        <div id="deck"></div>
                         <div id="player-tables"></div>
-                        <div id="myhand2_2_wrap" class="whiteblock">
-                        <div id="hand_2"></div>
+                        <div class="whiteblock player" id="player2_2" class="whiteblock">
+                        <div class="hand" id="hand_2"></div>
                         </div>
-                <div id="myhand_wrap" class="whiteblock">
-                <div id="hand"></div>
-                </div>
+                        <div id="myhand_wrap" class="whiteblock">
+                        <div class="hand" id="hand"></div>
+                        </div>
                     `);
                      break;
             }
-
 
             var stock_table = new ebg.stock();
             stock_table.create(this, $('player-tables'), this.cardwidth, this.cardheight);
@@ -243,7 +277,6 @@ p=p+1
 
             this.current_style_id = this.prefs[100].value;
 
-
             stock_table.item_margin=10;
             stock_table.centerItems = true;
 
@@ -253,6 +286,9 @@ p=p+1
             dojo.connect(stock_table, 'onChangeSelection', this, 'onTableSelectionChanged');
             dojo.connect($('preference_control_100'), 'onchange', this, 'onChangeForCardStyle');
             dojo.connect($('preference_fontrol_100'), 'onchange', this, 'onChangeForCardStyle');
+
+            dojo.connect($('preference_fontrol_101'), 'onchange', this, 'onChangeVisual');
+
 
             for(var color=1;color<=4;color++) {
                 for(var value=1;value<=10;value++) {
@@ -271,8 +307,30 @@ p=p+1
 
             this.tableCard = stock_table;
 
-this.createPlayerStock(gamedatas);
+            var stock_deck = new ebg.stock();
+            stock_deck.create(this, $('deck'), this.cardwidth, this.cardheight);
+            stock_deck.setSelectionMode(0);
 
+            stock_deck.item_margin=0;
+            stock_deck.centerItems = true;
+
+            for(var color=1;color<=4;color++) {
+                for(var value=1;value<=10;value++) {
+                    // Build card type id
+                    var card_id = this.getCardUniqueId(color, value);
+                    stock_deck.addItemType(card_id, null, this.cards_url, card_id);
+                }
+            }
+
+            for ( var i in this.gamedatas['deck' ]) {
+                var card = this.gamedatas['deck'][i];
+                var value = card.type_arg;
+                var color=card.type;
+                stock_deck.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+            }
+
+
+            this.createPlayerStock(gamedatas);
 
             var stock_player = new ebg.stock();
             stock_player.create(this, $('hand'), this.cardwidth, this.cardheight);
@@ -309,6 +367,9 @@ this.createPlayerStock(gamedatas);
             }
             this.playerHand = stock_player;
 
+            this.visual=this.prefs[101].value;
+
+            this.ChangeVisual();
 
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
@@ -337,6 +398,7 @@ this.createPlayerStock(gamedatas);
 
 
         setChooseActionState: function () {
+            this.statusBar.removeActionButtons()
             this.changeMainBar(_('You must play a card or pass'));
 //            this.unhiglightCards();
             this.SelectionType = 'hand';
@@ -362,10 +424,12 @@ this.createPlayerStock(gamedatas);
                 tableCard_ids.push ( this.tableCard.getSelectedItems()[i].id);
             };
 
-            if ( this.playerHand.getSelectedItems().length == 0 ){
-                playerCard_id = -1;
-            }else{
+            if ( this.playerHand.getSelectedItems().length == 1 ){
                 playerCard_id = this.playerHand.getSelectedItems()[0].id;
+            }else if ( this.playerPile[this.playerId].getSelectedItems().length == 1 ){
+                playerCard_id = this.playerPile[this.playerId].getSelectedItems()[0].id;
+            }else{
+                playerCard_id = -1;
             }
 
             this.bgaPerformAction('actTakeCard', {
@@ -390,40 +454,51 @@ this.createPlayerStock(gamedatas);
         },
 
         setPlayCardState: function () {
-            this.changeMainBar('');
-            this.addActionButton('takeCard_button', _('Take selected card'), 'onTakeCard');
-            this.addActionButton('leaveCard_button', _('Leave selected card'), 'onLeaveCard');
-            this.addActionButton('cancel_button', _('Cancel'), 'setChooseActionState');
-        },
+            this.changeMainBar(_('You must play a card or pass'));
+            if (this.visual==2){
+                var playerHand = this.playerPile[this.playerId];
+            }else{
+                var playerHand = this.playerHand;
+            }
+            var tableCard = this.tableCard;
 
+            if ((tableCard.getSelectedItems().length > 0) && (playerHand.getSelectedItems().length > 0)) {
+                this.statusBar.addActionButton(_('Take selected card'),() => this.onTakeCard());
+            }else{
+                this.statusBar.addActionButton(_('Take selected card'),() => this.onTakeCard(),{classes: 'disabled'});
+            }
 
-        setPlayCardState2: function () {
-            this.changeMainBar('');
-            this.addActionButton('takeCard_button', _('Take selected card'), 'onTakeCard');
-            this.addActionButton('cancel_button', _('Cancel'), 'setChooseActionState');
-        },
+            if (playerHand.getSelectedItems().length == 0){
+                this.statusBar.addActionButton(_('Leave selected card'),() => this.onLeaveCard(),{classes: 'disabled '});
+            }else{
+                this.statusBar.addActionButton(_('Leave selected card'),() => this.onLeaveCard());
+            }
+
+            this.statusBar.addActionButton(_('Cancel'),() => this.setChooseActionState())
+       },
 
         onPlayerHandSelectionChanged: function () {
 
-            var playerHand = this.playerHand;
+            if (this.visual==2){
+                var playerHand = this.playerPile[this.playerId];
+            }else{
+                var playerHand = this.playerHand;
+            }
 
             if (playerHand.getSelectedItems().length == 0) {
+                this.setPlayCardState();
                 return;
             }
 
-            if (this.checkAction('actTakeCard')) {
-
-                var items = playerHand.getSelectedItems();
-                if (items.length > 0) {
-                    this.SelectionType = 'hand';
-                    this.setPlayCardState();
-                    this.playerCard.selectedItemId = items[0].id;
-                } else if (this.SelectionType === 'hand') {
-                    this.setChooseActionState();
-                }
-            } else {
-                playerHand.unselectAll();
+            var items = playerHand.getSelectedItems();
+            if (items.length > 0) {
+                this.SelectionType = 'hand';
+                this.setPlayCardState();
+                this.playerCard.selectedItemId = items[0].id;
+            } else if (this.SelectionType === 'hand') {
+                this.setChooseActionState();
             }
+
         },
 
         onTableSelectionChanged: function () {
@@ -431,22 +506,19 @@ this.createPlayerStock(gamedatas);
             var tableCard = this.tableCard;
 
             if (tableCard.getSelectedItems().length == 0) {
+                this.setPlayCardState();
                 return;
             }
-
-            if (this.checkAction('actTakeCard')) {
 
                 var items = tableCard.getSelectedItems();
                 if (items.length > 0) {
                     this.SelectionType = 'table';
-                    this.setPlayCardState2();
+                    this.setPlayCardState();
                     this.tableCard.selectedItemId = items[0].id;
                 } else if (this.SelectionType === 'table') {
                     this.setChooseActionState();
                 }
-            } else {
-                tableCard.unselectAll();
-            }
+
         },
 
         ///////////////////////////////////////////////////
@@ -454,39 +526,56 @@ this.createPlayerStock(gamedatas);
 
         /*
             setupNotifications:
-
             In this method, you associate each of your game notifications with your local method to handle it.
-
             Note: game notification names correspond to "notifyAllPlayers" and "notifyPlayer" calls in
                   your shokoba.game.php file.
-
         */
         setupNotifications: function()
         {
             console.log( 'notifications subscriptions setup' );
 
-            // TODO: here, associate your game notifications with local methods
-
-            // Example 1: standard notification handling
-            // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
-
-            // Example 2: standard notification handling + tell the user interface to wait
-            //            during 3 seconds after calling the method in order to let the players
-            //            see what is happening in the game.
-            // dojo.subscribe( 'cardPlayed', this, "notif_cardPlayed" );
-            // this.notifqueue.setSynchronous( 'cardPlayed', 3000 );
-            //
             this.bgaSetupPromiseNotifications();
         },
+
+
+        /*
+            notif_newHandPrivate:
+            Refresh Player card
+        */
+
+        notif_newHandPrivate: function(args) {
+            for (var i in args.hand) {
+                var card = args.hand[i];
+                var color = card.type;
+                var value = card.type_arg;
+
+                this.playerPile[this.playerId ].addToStockWithId(this.getCardUniqueId(color, value), card.id);
+                this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+            }
+        },
+
+        /*
+            notif_newHand:
+            Refresh all other player card
+        */
+
 
         notif_newHand: function(args) {
             for (var i in args.hand) {
                 var card = args.hand[i];
                 var color = card.type;
                 var value = card.type_arg;
-                this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+
+                if(this.playerId != args.player_id)
+                    this.playerPile[args.player_id].addToStockWithId(this.getCardUniqueId(color, value), card.id);
+
             }
         },
+
+        /*
+            notif_newTable:
+            Refresh table card
+        */
 
         notif_newTable: function(args) {
 
@@ -500,6 +589,10 @@ this.createPlayerStock(gamedatas);
             }
         },
 
+        /*
+            notif_leaveCard:
+            move card from player to the table (when player decide to leave a card)
+        */
 
         notif_leaveCard: function (args) {
             var player_id = args.player_id;
@@ -508,9 +601,18 @@ this.createPlayerStock(gamedatas);
             if (this.playerId == player_id) {
                 this.playerHand.removeFromStockById(card_id);
             }
+
+            for (var player in this.playerPile){
+                this.playerPile[player].removeFromStockById(card_id)
+            };
+
             this.tableCard.addToStockWithId(card_type,card_id);
         },
 
+        /*
+            notif_newScores:
+            refresh score
+        */
 
         notif_newScores: async function( args ){
             for( var player_id in args.scores ){
@@ -518,6 +620,12 @@ this.createPlayerStock(gamedatas);
                 this.scoreCtrl[ player_id ].toValue( newScore );
             }
         },
+
+        /*
+            notif_takeCard:
+            remove card(s) from table and player hand when the player succefully
+            take them
+        */
 
         notif_takeCard: function (args) {
             var player_id = args.player_id;
@@ -530,6 +638,10 @@ this.createPlayerStock(gamedatas);
                     this.playerHand.removeFromStockById(card_id);
                 }
             }
+
+            for (var player in this.playerPile){
+                this.playerPile[player].removeFromStockById(card_id)
+            };
 
             var card_ids = args.tableCard_id;
             for (let index = 0; index < card_ids.length; index++) {
