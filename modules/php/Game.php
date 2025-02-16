@@ -24,10 +24,8 @@ class Game extends \Table
 {
     private static array $CARD_TYPES;
 
-    //
     private int $defautColor = 3;
     private int $defautValue = 1;
-
 
     /**
      * Your global variables labels:
@@ -52,7 +50,7 @@ class Game extends \Table
             "finalScore" => 15,
 
             //game option
-            "teamPLay" =>100,
+            "teamPlay" =>100,
             "advancedTeamPlay" =>101,
             "advancedCard" =>102,
 
@@ -136,6 +134,8 @@ class Game extends \Table
      -> take 2 4 with the 6
      -> take 1 2 7 with the 10 => not possible with the advace rule
      -> take 10 with 10
+
+     * TODO might improve the shokoba team calculation
 
      * @throws BgaUserException
      */
@@ -262,6 +262,39 @@ class Game extends \Table
                     SET player_score = player_score +1 WHERE player_id=".$player_id;
             $this->DbQuery( $sql );
 
+            // add point to team mate also
+            if ($this->getGameStateValue('teamPlay') == 2){
+                $players = $this->loadPlayersBasicInfos();
+                $i=0;
+                $j=0;
+                foreach ($players as $pid => $player) {
+                    if(($i%2)==0){
+                        $teamA[$j]=$pid;
+                    }else{
+                        $teamB[$j]=$pid;
+                        $j++;
+                    }
+                    $i++;
+                }
+
+                if (in_array($player_id, $teamA)) {
+                    if($teamA[0]==$player_id){
+                        $player_id2=$teamA[1];
+                    }else{
+                        $player_id2=$teamA[0];
+                    }
+                }else{
+                    if($teamB[0]==$player_id){
+                        $player_id2=$teamB[1];
+                    }else{
+                        $player_id2=$teamB[0];
+                    }
+                }
+                $sql = "UPDATE player
+                        SET player_score = player_score +1 WHERE player_id=".$player_id2;
+                $this->DbQuery( $sql );
+            }
+
             //update score
             $newScores = $this->getCollectionFromDb( "SELECT player_id, player_score FROM player", true );
             $this->notifyAllPlayers( "newScores", "", array(
@@ -336,6 +369,8 @@ class Game extends \Table
         $players = $this->loadPlayersBasicInfos();
 
         $countCard=[];
+        $countCardTeam=[];
+
         $points=[];
         $nameRow = [''];
 
@@ -345,23 +380,56 @@ class Game extends \Table
         $EmeraudesRow = [['str' => $this->translatedColors[3], 'args' => []]];
         $DiamondRow = [['str' => $this->translatedColors[4], 'args' => []]];
 
+
+        $points[0]=0;
+        $points[1]=0;
+        $i=0;
+        $j=0;
         //init score
         foreach ($players as $player_id => $player) {
             $points[$player_id]=0;
+            if(($i%2)==0){
+                $teamA[$j]=$player_id;
+            }else{
+                $teamB[$j]=$player_id;
+                $j++;
+            }
+            $i++;
         }
 //"${player_name} earns 1 gemstone for the most diamonds (3 cards)"
 //"${player_1} and ${player_2} are tied on number of rubies, no gemstones for rubies this round."
         //max of each card type
         for ($color = 1; $color <= 4; $color++) {
+            $team=0;
             foreach ($players as $player_id => $player) {
                 $countCard[$color][$player_id]=sizeof($this->cards->getCardsOfTypeInLocation($color,null,'taken',$player_id));
             }
-            $maxs = array_keys($countCard[$color], max($countCard[$color]));
 
-            if(sizeof($maxs)==1){
-                $points[$maxs[0]]=$points[$maxs[0]]+1;
-                $countCard[$color][$maxs[0]]=(string)$countCard[$color][$maxs[0]].'✓';
-                $this->incStat(1,$this->translatedColors[$color],$maxs[0]);
+            if ($this->getGameStateValue('teamPlay') == 2){
+                $countCardTeam[$color][0]=$countCard[$color][$teamA[0]]+$countCard[$color][$teamA[1]];
+                $countCardTeam[$color][1]=$countCard[$color][$teamB[0]]+$countCard[$color][$teamB[1]];
+                if($countCardTeam[$color][0]>$countCardTeam[$color][1]){
+                    $points[0]=$points[0]+1;
+                    $countCardTeam[$color][0]=(string)$countCardTeam[$color][0].'✓';
+                }else{
+                    $points[1]=$points[1]+1;
+                    $countCardTeam[$color][1]=(string)$countCardTeam[$color][1].'✓';
+                }
+                $maxs = array_keys($countCard[$color], max($countCard[$color]));
+
+                //stat will be calculated as indivdual not team
+                if(sizeof($maxs)==1){
+                    $this->incStat(1,$this->translatedColors[$color],$maxs[0]);
+                }
+
+            }else{
+                $maxs = array_keys($countCard[$color], max($countCard[$color]));
+
+                if(sizeof($maxs)==1){
+                    $points[$maxs[0]]=$points[$maxs[0]]+1;
+                    $countCard[$color][$maxs[0]]=(string)$countCard[$color][$maxs[0]].'✓';
+                    $this->incStat(1,$this->translatedColors[$color],$maxs[0]);
+                }
             }
         }
 
@@ -370,29 +438,86 @@ class Game extends \Table
         foreach ($players as $player_id => $player) {
             $countCard[0][$player_id]=$this->cards->countCardInLocation('taken',$player_id);
         }
-        $maxs = array_keys($countCard[0], max($countCard[0]));
 
-        if(sizeof($maxs)==1){
-            $points[$maxs[0]]=$points[$maxs[0]]+1;
-            $countCard[0][$maxs[0]]=(string)$countCard[0][$maxs[0]].'✓';
-            $this->incStat(1,$this->translatedColors[0],$maxs[0]);
+
+        if ($this->getGameStateValue('teamPlay') == 2){
+            $countCardTeam[0][0]=$countCard[0][$teamA[0]]+$countCard[0][$teamA[0]];
+            $countCardTeam[0][1]=$countCard[0][$teamB[0]]+$countCard[0][$teamB[0]];
+            if($countCardTeam[0][0]>$countCardTeam[0][1]){
+                $points[0]=$points[0]+1;
+                $countCardTeam[0][0]=(string)$countCardTeam[0][0].'✓';
+            }else{
+                $points[1]=$points[1]+1;
+                $countCardTeam[0][1]=(string)$countCardTeam[0][1].'✓';
+            }
+            $maxs = array_keys($countCard[0], max($countCard[0]));
+
+            //stat will be calculated as indivdual not team
+            if(sizeof($maxs)==1){
+                $this->incStat(1,$this->translatedColors[0],$maxs[0]);
+            }
+
+        }else{
+            $maxs = array_keys($countCard[0], max($countCard[0]));
+
+            if(sizeof($maxs)==1){
+                $points[$maxs[0]]=$points[$maxs[0]]+1;
+                $countCard[0][$maxs[0]]=(string)$countCard[0][$maxs[0]].'✓';
+                $this->incStat(1,$this->translatedColors[0],$maxs[0]);
+            }
         }
 
 
-        foreach ($players as $player_id => $player) {
-            // Header line
-            $nameRow[] = [
-                'str' => '${player_name}',
-                'args' => ['player_name' => $this->getPlayerNameById($player_id)],
-                'type' => 'header',
-            ];
 
-            $totalRow[] = $countCard[0][$player_id];
-            $saphirRow[] = $countCard[1][$player_id];
-            $rubisRow[] = $countCard[2][$player_id];
-            $EmeraudesRow[] = $countCard[3][$player_id];
-            $DiamondRow[] = $countCard[4][$player_id];
+        if ($this->getGameStateValue('teamPlay') == 2){
 
+                $nameRow[] = [
+                    'str' => '${player_name1} ${player_name2}',
+                    'args' => ['player_name1' => $this->getPlayerNameById($teamA[0]),
+                               'player_name2' => $this->getPlayerNameById($teamA[1])
+                    ],
+                    'type' => 'header',
+                ];
+
+                $nameRow[] = [
+                    'str' => '${player_name1} ${player_name2}',
+                    'args' => ['player_name1' => $this->getPlayerNameById($teamB[0]),
+                               'player_name2' => $this->getPlayerNameById($teamB[1])
+                    ],
+                    'type' => 'header',
+                ];
+
+                $totalRow[] = $countCardTeam[0][0].'('.$countCard[0][$teamA[0]].','.$countCard[0][$teamA[1]].')';
+                $saphirRow[] = $countCardTeam[1][0].'('.$countCard[1][$teamA[0]].','.$countCard[1][$teamA[1]].')';
+                $rubisRow[] = $countCardTeam[2][0].'('.$countCard[2][$teamA[0]].','.$countCard[2][$teamA[1]].')';
+                $EmeraudesRow[] = $countCardTeam[3][0].'('.$countCard[3][$teamA[0]].','.$countCard[3][$teamA[1]].')';
+                $DiamondRow[] = $countCardTeam[4][0].'('.$countCard[4][$teamA[0]].','.$countCard[4][$teamA[1]].')';
+
+                $totalRow[] = $countCardTeam[0][1].'('.$countCard[0][$teamB[0]].','.$countCard[0][$teamB[1]].')';
+                $saphirRow[] = $countCardTeam[1][1].'('.$countCard[1][$teamB[0]].','.$countCard[1][$teamB[1]].')';
+                $rubisRow[] = $countCardTeam[2][1].'('.$countCard[2][$teamB[0]].','.$countCard[2][$teamB[1]].')';
+                $EmeraudesRow[] = $countCardTeam[3][1].'('.$countCard[3][$teamB[0]].','.$countCard[3][$teamB[1]].')';
+                $DiamondRow[] = $countCardTeam[4][1].'('.$countCard[4][$teamB[0]].','.$countCard[4][$teamB[1]].')';
+
+
+
+
+        }else{
+            foreach ($players as $player_id => $player) {
+                // Header line
+                $nameRow[] = [
+                    'str' => '${player_name}',
+                    'args' => ['player_name' => $this->getPlayerNameById($player_id)],
+                    'type' => 'header',
+                ];
+
+                $totalRow[] = $countCard[0][$player_id];
+                $saphirRow[] = $countCard[1][$player_id];
+                $rubisRow[] = $countCard[2][$player_id];
+                $EmeraudesRow[] = $countCard[3][$player_id];
+                $DiamondRow[] = $countCard[4][$player_id];
+
+            }
         }
 
         $table = [$nameRow,$saphirRow,$rubisRow,$EmeraudesRow,$DiamondRow,$totalRow];
@@ -404,9 +529,15 @@ class Game extends \Table
             "closing" => clienttranslate("Close"),
         ]);
 
-
-        foreach ($players as $player_id => $player) {
-            self::DbQuery(sprintf("UPDATE player SET player_score = player_score + %d WHERE player_id = '%s'", $points[$player_id], $player_id));
+        if ($this->getGameStateValue('teamPlay') == 2){
+            self::DbQuery(sprintf("UPDATE player SET player_score = player_score + %d WHERE player_id = '%s' or player_id = '%s'",
+            $points[0], $teamA[0], $teamA[1]));
+            self::DbQuery(sprintf("UPDATE player SET player_score = player_score + %d WHERE player_id = '%s' or player_id = '%s'",
+            $points[1], $teamB[0], $teamB[1]));
+        }else{
+            foreach ($players as $player_id => $player) {
+                self::DbQuery(sprintf("UPDATE player SET player_score = player_score + %d WHERE player_id = '%s'", $points[$player_id], $player_id));
+            }
         }
     }
 
@@ -569,11 +700,14 @@ class Game extends \Table
                 $this->setGameStateInitialValue('finalScore', 6);
                 break;
             case 4:
-                //if (TEAM){
-                    //$this->setGameStateInitialValue('finalScore', 4);
-                //}else{
+                if ($this->getGameStateValue('teamPlay') == 2){
                     $this->setGameStateInitialValue('finalScore', 7);
-                //}
+                    if ($this->getGameStateValue('advancedTeamPlay') == 2){
+                        $this->setGameStateInitialValue('HandSize', 9);
+                    }
+                }else{
+                    $this->setGameStateInitialValue('finalScore', 4);
+                }
                 break;
         }
 
