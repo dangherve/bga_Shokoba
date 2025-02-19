@@ -47,6 +47,8 @@ function (dojo, declare) {
             this.playersHand = [];
             this.playerHand = null;
             this.tableCard = null;
+            this.deck = null;
+
             this.visual=1;
         },
 
@@ -172,7 +174,8 @@ function (dojo, declare) {
                 for(var i in this.gamedatas['hand'+ player_id]) {
                     var card = this.gamedatas['hand'+ player_id][i];
                     var value = card.type_arg;
-                    var color=card.type;
+                    var color = card.type;
+
                     stock_player.addToStockWithId(this.getCardUniqueId(color, value), card.id);
                 }
                 this.playersHand[player_id] = stock_player;
@@ -220,8 +223,10 @@ function (dojo, declare) {
                         <div class="whiteblock player" id="player2_4" class="whiteblock">
                         <div class="hand" id="hand_2"></div>
                         </div>
-                        <div id="deck"></div>
+                        <div class="table">
+                        <div class="deck" id="deck"></div>
                         <div id="player-tables"></div>
+                        </div>
                         <div class="whiteblock player" id="player3_4" class="whiteblock">
                         <div class="hand" id="hand_3"></div>
                         </div>
@@ -238,11 +243,13 @@ function (dojo, declare) {
                         <div class="whiteblock player" id="player1_3" class="whiteblock">
                         <div class="hand" id="hand_1"></div>
                         </div>
-                        <div id="deck"></div>
                         <div class="whiteblock player" id="player2_3" class="whiteblock">
                         <div class="hand" id="hand_2"></div>
                         </div>
+                        <div class="table">
+                        <div class="deck" id="deck"></div>
                         <div id="player-tables"></div>
+                        </div>
                         <div class="whiteblock player" id="player3_3" class="whiteblock">
                         <div class="hand" id="hand_3"></div>
                         </div>
@@ -256,8 +263,10 @@ function (dojo, declare) {
                         <div class="whiteblock player" id="player1_2" class="whiteblock">
                         <div class="hand" id="hand_1"></div>
                         </div>
-                        <div id="deck"></div>
+                        <div class="table">
+                        <div class="deck" id="deck"></div>
                         <div id="player-tables"></div>
+                        </div>
                         <div class="whiteblock player" id="player2_2" class="whiteblock">
                         <div class="hand" id="hand_2"></div>
                         </div>
@@ -289,12 +298,21 @@ function (dojo, declare) {
 
             dojo.connect($('preference_fontrol_101'), 'onchange', this, 'onChangeVisual');
 
+            var stock_deck = new ebg.stock();
+            stock_deck.create(this, $('deck'), this.cardwidth, this.cardheight);
+            stock_deck.setSelectionMode(0);
+            stock_deck.setSelectionAppearance('class');
+            stock_deck.item_margin=0;
+            stock_deck.image_items_per_row = 10;
+            stock_deck.autowidth = true;
+            stock_deck.setOverlap(1, 0);
 
             for(var color=1;color<=4;color++) {
                 for(var value=1;value<=10;value++) {
                     // Build card type id
                     var card_id = this.getCardUniqueId(color, value);
                     stock_table.addItemType(card_id, null, this.cards_url, card_id);
+                    stock_deck.addItemType(card_id, null, this.cards_url, card_id);
                 }
             }
 
@@ -307,28 +325,15 @@ function (dojo, declare) {
 
             this.tableCard = stock_table;
 
-            var stock_deck = new ebg.stock();
-            stock_deck.create(this, $('deck'), this.cardwidth, this.cardheight);
-            stock_deck.setSelectionMode(0);
-
-            stock_deck.item_margin=0;
-            stock_deck.centerItems = true;
-
-            for(var color=1;color<=4;color++) {
-                for(var value=1;value<=10;value++) {
-                    // Build card type id
-                    var card_id = this.getCardUniqueId(color, value);
-                    stock_deck.addItemType(card_id, null, this.cards_url, card_id);
-                }
-            }
-
             for ( var i in this.gamedatas['deck' ]) {
-                var card = this.gamedatas['deck'][i];
+                var card  = this.gamedatas['deck'][i];
                 var value = card.type_arg;
-                var color=card.type;
+                var color = card.type;
+
                 stock_deck.addToStockWithId(this.getCardUniqueId(color, value), card.id);
             }
 
+            this.deck = stock_deck;
 
             this.createPlayerStock(gamedatas);
 
@@ -360,9 +365,9 @@ function (dojo, declare) {
 
             // Cards in player's hand
             for(var i in this.gamedatas['hand']) {
-                var card = this.gamedatas['hand'][i];
+                var card  = this.gamedatas['hand'][i];
                 var value = card.type_arg;
-                var color=card.type;
+                var color = card.type;
                 stock_player.addToStockWithId(this.getCardUniqueId(color, value), card.id);
             }
             this.playerHand = stock_player;
@@ -551,6 +556,7 @@ function (dojo, declare) {
 
                 this.playerPile[this.playerId ].addToStockWithId(this.getCardUniqueId(color, value), card.id);
                 this.playerHand.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+                this.deck.removeFromStockById(card.id);
             }
         },
 
@@ -566,8 +572,10 @@ function (dojo, declare) {
                 var color = card.type;
                 var value = card.type_arg;
 
-                if(this.playerId != args.player_id)
+                if(this.playerId != args.player_id){
                     this.playerPile[args.player_id].addToStockWithId(this.getCardUniqueId(color, value), card.id);
+                    this.deck.removeFromStockById(card.id);
+                }
 
             }
         },
@@ -587,6 +595,14 @@ function (dojo, declare) {
                 var value = card.type_arg;
                 this.tableCard.addToStockWithId(this.getCardUniqueId(color, value), card.id);
             }
+
+            for (var i in args.deck) {
+                var card = args.deck[i];
+                var color = card.type;
+                var value = card.type_arg;
+                this.deck.addToStockWithId(this.getCardUniqueId(color, value), card.id);
+            }
+
         },
 
         /*

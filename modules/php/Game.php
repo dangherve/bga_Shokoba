@@ -633,6 +633,9 @@ class Game extends \Table
         // Hands
         $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
 
+        // deck
+        $result['deck'] = $this->getDeckCard();
+
         //order_by not working or did no have correct syntax ,$order_by='id'
         $result['table'] = $this->cards->getCardsInLocation($location='table');
 
@@ -738,11 +741,19 @@ class Game extends \Table
                 $cards[$i]['type_arg'] = $this->defautValue;
             }
         }
-
-
         return $cards;
     }
 
+    protected function getDeckCard(): array
+    {
+        $cards = $this->cards->getCardsInLocation('deck');
+
+        foreach ($cards as $i => $value) {
+                $cards[$i]['type'] = $this->defautColor;
+                $cards[$i]['type_arg'] = $this->defautValue;
+        }
+        return $cards;
+    }
 
     function stNewTable() {
 
@@ -763,6 +774,7 @@ class Game extends \Table
         // Notify player about his cards
         $this->notifyAllPlayers( 'newTable', clienttranslate("A new round starts."), array(
             'table' => $this->cards->getCardsInLocation('table'),
+            'deck' => $this->getDeckCard(),
         ));
 
        $this->gamestate->nextState('newTurn');
@@ -784,12 +796,13 @@ class Game extends \Table
                 'hand' => $this->getPlayerHand($player_id, true),
             ));
 
- $hand = $this->getPlayerHand($player_id);
+            $hand = $this->getPlayerHand($player_id);
 
             self::notifyPlayer($player_id, 'newHandPrivate', '', array(
                 'hand' => $hand,
             ));
         }
+
         $this->gamestate->nextState('playerTurn');
     }
 
