@@ -48,6 +48,7 @@ class Game extends \Table
             "TableSize" => 13,
             "lastTakenPlayer" => 14,
             "finalScore" => 15,
+            "dealer" => 16,
 
             //game option
             "teamPlay" =>100,
@@ -594,6 +595,8 @@ class Game extends \Table
             $this->gamestate->nextState("endScore");
         }else{
             $this->incStat(1,"turns_number");
+            $this->gamestate->changeActivePlayer($this->getPlayerAfter($this->getGameStateValue('dealer')));
+            $this->setGameStateInitialValue("dealer", $this->getPlayerAfter($this->activeNextPlayer()));
             $this->gamestate->nextState("newTable");
         }
 
@@ -730,6 +733,8 @@ class Game extends \Table
         $this->initStat("player", "Diamond", 0);
         $this->initStat("player", "Total", 0);
         $this->initStat("player", "Shokoba", 0);
+
+        $this->setGameStateInitialValue("dealer", $this->activeNextPlayer());
 
         // Activate first player once everything has been initialized and ready.
         $this->activeNextPlayer();
