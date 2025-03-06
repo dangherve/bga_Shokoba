@@ -2,7 +2,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * shokoba implementation : © <Your name here> <Your email address here>
+ * shokoba implementation : © <Herve Dang> <dang.herve@gmail.com>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -109,7 +109,17 @@ $machinestates = [
         "type" => "game",
         "action" => "stEndHand",
         "updateGameProgression" => true,
-        "transitions" => ["endGame" => 99, "newTable" => 2]
+        "transitions" => ["endScore" => 5, "newTable" => 2]
+    ],
+
+//dummy step to be able to call updateGameProgression
+    5 => [
+        "name" => "endScore",
+        "description" => '',
+        "type" => "game",
+        "action" => "stDummyAction",
+        "updateGameProgression" => true,
+        "transitions" => ["endGame" => 99]
     ],
 
 
