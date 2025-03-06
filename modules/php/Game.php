@@ -53,7 +53,8 @@ class Game extends \Table
             "teamPlay" =>100,
             "advancedTeamPlay" =>101,
             "advancedCard" =>102,
-
+            "officialScore" =>103,
+            "score" =>104,
         ]);
 
         $this->cards = $this->getNew("module.common.deck");
@@ -611,7 +612,6 @@ class Game extends \Table
         $result = [];
 
         // WARNING: We must only return information visible by the current player.
-        $current_player_id = (int) $this->getCurrentPlayerId();
         $player_id = $this->getCurrentPlayerId();
         $result['player_id'] = $player_id;
 
@@ -620,7 +620,6 @@ class Game extends \Table
         $result["players"] = $this->getCollectionFromDb(
             "SELECT `player_id` `id`, `player_score` `score` FROM `player`"
         );
-
 
         // Hands
         $players = $this->loadPlayersBasicInfos();
@@ -633,9 +632,8 @@ class Game extends \Table
             $result['hand' . $other_id] = $this->getPlayerHand($other_id, $shouldCardsBeHidden);
         }
 
-
         // Hands
-        $result['hand'] = $this->cards->getCardsInLocation('hand', $current_player_id);
+        $result['hand'] = $this->cards->getCardsInLocation('hand', $player_id);
 
         // deck
         $result['deck'] = $this->getDeckCard();
@@ -699,25 +697,28 @@ class Game extends \Table
         $this->setGameStateInitialValue('HandSize', 3);
         $this->setGameStateInitialValue('TableSize', 4);
 
-        switch ($NumberOfPlayer){
-            case 2:
-                $this->setGameStateInitialValue('finalScore', 7);
-                break;
-            case 3:
-                $this->setGameStateInitialValue('finalScore', 6);
-                break;
-            case 4:
-                if ($this->getGameStateValue('teamPlay') == 2){
+        if($this->getGameStateValue('officialScore') == 1){
+            switch ($NumberOfPlayer){
+                case 2:
                     $this->setGameStateInitialValue('finalScore', 7);
-                    if ($this->getGameStateValue('advancedTeamPlay') == 2){
-                        $this->setGameStateInitialValue('HandSize', 9);
+                    break;
+                case 3:
+                    $this->setGameStateInitialValue('finalScore', 6);
+                    break;
+                case 4:
+                    if ($this->getGameStateValue('teamPlay') == 2){
+                        $this->setGameStateInitialValue('finalScore', 7);
+                        if ($this->getGameStateValue('advancedTeamPlay') == 2){
+                            $this->setGameStateInitialValue('HandSize', 9);
+                        }
+                    }else{
+                        $this->setGameStateInitialValue('finalScore', 4);
                     }
-                }else{
-                    $this->setGameStateInitialValue('finalScore', 4);
-                }
-                break;
+                    break;
+            }
+        }else{
+            $this->setGameStateInitialValue('finalScore', $this->getGameStateValue('score'));
         }
-
         $this->initializeDeck();
 
         // Init game statistics.
