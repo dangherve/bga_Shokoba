@@ -54,5 +54,38 @@
         "name": "On"
       }
     }
+  },
+  "103": {
+    "name": "Official score end ",
+    "values": {
+      "1": {
+        "name": "Yes"
+      },
+      "2": {
+        "name": "No"
+      }
+    }
+  },
+  "104": {
+    "name": "Score",
+    "values": {
+      "11": {
+        "name": "11 (official score of old rule)"
+      },
+      "16": {
+        "name": "16"
+      },
+      "21": {
+        "name": "21"
+      }
+
+    },
+    "displaycondition": [
+      {
+        "type": "otheroption",
+        "id": 103,
+        "value": 2
+      }
+    ]
   }
 }
