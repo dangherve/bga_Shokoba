@@ -2,7 +2,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * shokoba implementation : © <Your name here> <Your email address here>
+ * shokoba implementation : © <Herve Dang> <dang.herve@gmail.com>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -565,6 +565,10 @@ class Game extends \Table
         }
     }
 
+    public function stDummyAction(): void{
+        $this->gamestate->nextState("endGame");
+    }
+
     public function stEndHand(): void {
 
         $this->cards->moveAllCardsInLocation("table", "taken",null,$this->getGameStateValue("lastTakenPlayer"));
@@ -586,7 +590,7 @@ class Game extends \Table
         }
 
         if($endgame){
-            $this->gamestate->nextState("endGame");
+            $this->gamestate->nextState("endScore");
         }else{
             $this->incStat(1,"turns_number");
             $this->gamestate->nextState("newTable");
