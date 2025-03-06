@@ -1,7 +1,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * shokoba implementation : © <Your name here> <Your email address here>
+ * shokoba implementation : © <Herve Dang> <dang.herve@gmail.com>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -107,41 +107,59 @@
     display: block;
 }
 
-#player1_4, #player1_3{
-    width: 47%;
+.player1_4, .player1_3{
+    width:auto;
+    min-width: 20%;
+    max-width: 47%;
     float: left;
     display: none;
+    margin: auto;
+
 }
 
-
-#player2_4, #player2_3 {
-    width: 47%;
+.player2_4, .player2_3 {
+    width:auto;
+    min-width: 20%;
+    max-width: 47%;
     float: right;
     display: none;
+    margin: auto;
+
 }
 
-#player3_4 {
-    width: 47%;
+.player3_4 {
+    width:auto;
+    min-width: 20%;
+    max-width: 47%;
     float: left;
     display: none;
+    margin: auto;
+
 }
 
-#player4_4 {
-    width: 47%;
+.player4_4 {
+    width:auto;
+    min-width: 20%;
+    max-width: 47%;
     float: right;
     display: none;
+    margin: auto;
+
 }
 
-#player1_2 {
-    width: 47%;
+.player1_2 {
+    width:auto;
+    min-width: 20%;
+    max-width: 47%;
     display: block;
     margin: auto;
 }
 
-
-#player2_2, #player3_3{
+.player2_2, .player3_3{
+    width:auto;
+    min-width: 20%;
+    max-width: 47%;
     margin: auto;
-    width: 47%;
     display: block;
 }
 .stockitem_selected {

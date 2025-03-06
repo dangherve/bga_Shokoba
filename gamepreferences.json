@@ -3,14 +3,20 @@
     "name": "Card style",
     "needReload": false,
     "values": {
-      "1": {
+      "4": {
         "name": "Official graphic"
+      },
+      "3": {
+        "name": "Official graphic small"
       },
       "2": {
         "name": "limited visual"
+      },
+      "1": {
+        "name": "limited visual small"
       }
     },
-    "default": 1
+    "default": 4
   },
  "101": {
     "name": "Visual",

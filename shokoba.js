@@ -1,7 +1,7 @@
 /**
  *------
  * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * shokoba implementation : © <Your name here> <Your email address here>
+ * shokoba implementation : © <Herve Dang> <dang.herve@gmail.com>
  *
  * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
  * See http://en.boardgamearena.com/#!doc/Studio for more information.
@@ -44,6 +44,7 @@ function (dojo, declare) {
 
             this.cards_per_row = 5;
 
+            this.players = null;
             this.playersHand = [];
             this.playerHand = null;
             this.tableCard = null;
@@ -69,8 +70,10 @@ function (dojo, declare) {
             dojo.query('.' + current_style).addClass(new_style).removeClass(current_style);
 
             // Set the new style for cards which will appear in the stocks
-            var stocks = [this.tableCard,this.playerHand];
-            stocks.concat( this.playersHand)
+            var stocks = this.playersHand;
+            stocks.push( this.tableCard)
+            stocks.push( this.playerHand)
+            stocks.push( this.deck)
 
             for (i in stocks) {
                 var stock = stocks[i];
@@ -81,6 +84,13 @@ function (dojo, declare) {
                     }
                     item.image = image;
                 }
+
+                if((new_style_id%2)==0){
+                    stock.resizeItems(250, 250);
+                }else{
+                    stock.resizeItems(100, 100);
+                }
+
                 stock.updateDisplay();
             }
 
@@ -99,7 +109,7 @@ function (dojo, declare) {
 
         ChangeVisual : function(){
 
-            var nodeList=document.querySelectorAll(".player")
+            var nodeList=document.querySelectorAll('[id^=player_hand_]')
 
             if (this.visual==2){
                  document.getElementById("myhand_wrap").style.display = "none";
@@ -140,13 +150,19 @@ function (dojo, declare) {
             var p =1
             for (var player_id in data.players) {
                 var stock_player = new ebg.stock();
+
+                player=document.getElementById('hand_' + p).parentNode;
+
+                player.setAttribute("id","player_hand_"+player_id)
+
                 document.getElementById('hand_' + p).setAttribute("id", 'hand_' + player_id);
                 p=p+1
 
                 stock_player.create(this, $('hand_' + player_id), this.cardwidth, this.cardheight);
 
                 stock_player.setSelectionAppearance('class');
-                //active player -> 1
+
+                stock_player.autowidth = true;
 
                 stock_player.item_margin=10;
                 stock_player.image_items_per_row = 10;
@@ -214,23 +230,25 @@ function (dojo, declare) {
             this.playerCard = { drag: 'none', selectedItemId: null, nodes: [] };
             this.tableCard = { drag: 'none', selectedItemId: null, nodes: [] };
 
+            this.players = gamedatas.players;
+
             switch(gamedatas['nbplayer']) {
                 case 4:
                     document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
-                        <div class="whiteblock player" id="player1_4" class="whiteblock">
+                        <div class="whiteblock player1_4">
                         <div class="hand" id="hand_1"></div>
                         </div>
-                        <div class="whiteblock player" id="player2_4" class="whiteblock">
+                        <div class="whiteblock player2_4" >
                         <div class="hand" id="hand_2"></div>
                         </div>
                         <div class="table">
                         <div class="deck" id="deck"></div>
                         <div id="player-tables"></div>
                         </div>
-                        <div class="whiteblock player" id="player3_4" class="whiteblock">
+                        <div class="whiteblock player3_4" >
                         <div class="hand" id="hand_3"></div>
                         </div>
-                        <div class="whiteblock player" id="player4_4" class="whiteblock">
+                        <div class="whiteblock player4_4" >
                         <div class="hand" id="hand_4"></div>
                         </div>
                         <div id="myhand_wrap" class="whiteblock">
@@ -240,17 +258,17 @@ function (dojo, declare) {
                      break;
                 case 3:
                     document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
-                        <div class="whiteblock player" id="player1_3" class="whiteblock">
+                        <div class="whiteblock player1_3">
                         <div class="hand" id="hand_1"></div>
                         </div>
-                        <div class="whiteblock player" id="player2_3" class="whiteblock">
+                        <div class="whiteblock player2_3">
                         <div class="hand" id="hand_2"></div>
                         </div>
                         <div class="table">
                         <div class="deck" id="deck"></div>
                         <div id="player-tables"></div>
                         </div>
-                        <div class="whiteblock player" id="player3_3" class="whiteblock">
+                        <div class="whiteblock player3_3">
                         <div class="hand" id="hand_3"></div>
                         </div>
                         <div id="myhand_wrap" class="whiteblock">
@@ -260,22 +278,30 @@ function (dojo, declare) {
                      break;
                 case 2:
                     document.getElementById('game_play_area').insertAdjacentHTML('beforeend', `
-                        <div class="whiteblock player" id="player1_2" class="whiteblock">
+                        <div class="whiteblock player1_2">
                         <div class="hand" id="hand_1"></div>
                         </div>
                         <div class="table">
                         <div class="deck" id="deck"></div>
                         <div id="player-tables"></div>
                         </div>
-                        <div class="whiteblock player" id="player2_2" class="whiteblock">
+                        <div class="whiteblock player2_2">
                         <div class="hand" id="hand_2"></div>
                         </div>
-                        <div id="myhand_wrap" class="whiteblock">
+                        <div id="myhand_wrap"  class="whiteblock">
                         <div class="hand" id="hand"></div>
                         </div>
                     `);
                      break;
             }
+
+                if((this.prefs[100].value%2)==0){
+                     this.cardwidth=250
+                     this.cardheight=250
+                }else{
+                     this.cardwidth=100
+                     this.cardheight=100
+                }
 
             var stock_table = new ebg.stock();
             stock_table.create(this, $('player-tables'), this.cardwidth, this.cardheight);
@@ -302,10 +328,11 @@ function (dojo, declare) {
             stock_deck.create(this, $('deck'), this.cardwidth, this.cardheight);
             stock_deck.setSelectionMode(0);
             stock_deck.setSelectionAppearance('class');
-            stock_deck.item_margin=0;
+            stock_deck.item_margin=1;
             stock_deck.image_items_per_row = 10;
             stock_deck.autowidth = true;
-            stock_deck.setOverlap(1, 0);
+            stock_deck.setOverlap(0.1, 0.1);
+            stock_deck.order_items = false;
 
             for(var color=1;color<=4;color++) {
                 for(var value=1;value<=10;value++) {
@@ -389,6 +416,37 @@ function (dojo, declare) {
 
 
         ///////////////////////////////////////////////////
+        //// Game & client states
+
+        // onEnteringState: this method is called each time we are entering into a new game state.
+        //                  You can use this method to perform some user interface changes at this moment.
+        //
+        onEnteringState: function( stateName, args )
+        {
+            console.log( 'Entering state: '+stateName, args );
+
+            switch( stateName )
+            {
+                case 'playerTurn':
+                    list=document.querySelectorAll('[id^=player_hand_]')
+
+                    //remove all border
+                    for(var i in list) {
+                        if (list[i].nodeName == "DIV"){
+                            list[i].style.border=""
+                        }
+                    }
+                    player=document.getElementById('player_hand_' + args.active_player).style.border="3px solid #"+ this.players[args.active_player].color;
+                    break;
+
+
+
+            case 'dummmy':
+                break;
+            }
+        },
+
+        ///////////////////////////////////////////////////
         //// Utility methods
 
         /*
@@ -467,7 +525,7 @@ function (dojo, declare) {
             }
             var tableCard = this.tableCard;
 
-            if ((tableCard.getSelectedItems().length > 0) && (playerHand.getSelectedItems().length > 0)) {
+            if ((tableCard.getSelectedItems().length > 0) ) {
                 this.statusBar.addActionButton(_('Take selected card'),() => this.onTakeCard());
             }else{
                 this.statusBar.addActionButton(_('Take selected card'),() => this.onTakeCard(),{classes: 'disabled'});
