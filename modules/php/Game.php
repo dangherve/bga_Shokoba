@@ -181,7 +181,7 @@ class Game extends \Table
                 $value=$value+ (int)SELF::getCardValue($tableCard_id);
                 $cardsTaken[]=(int)SELF::getCardValue($tableCard_id);
                 $card=$this->cards->getCard($tableCard_id);
-                $message.=$card['type_arg']." ".$this->translatedColors[$card['type']];
+                $message.=" ".$card['type_arg']." ".$this->translatedColors[$card['type']];
             }
 
             //check if value is a match
