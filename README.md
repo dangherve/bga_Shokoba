@@ -1,3 +1,5 @@
+# bga_Shokoba
+
 MJ games gave me permission to implement this game on boardgameareana.
 
 The game is currently in Alpha we will push it to BETA soon
