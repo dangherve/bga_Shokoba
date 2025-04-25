@@ -87,5 +87,16 @@
         "value": 2
       }
     ]
+  },
+  "105": {
+    "name": "No memory",
+    "values": {
+      "1": {
+        "name": "Off"
+      },
+      "2": {
+        "name": "On"
+      }
+    }
   }
 }
