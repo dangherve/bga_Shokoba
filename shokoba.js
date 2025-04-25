@@ -322,10 +322,10 @@ function (dojo, declare) {
 
             stock_table.image_items_per_row = 10;
             dojo.connect(stock_table, 'onChangeSelection', this, 'onTableSelectionChanged');
-            dojo.connect($('preference_control_100'), 'onchange', this, 'onChangeForCardStyle');
-            dojo.connect($('preference_control_100'), 'onchange', this, 'onChangeForCardStyle');
+            dojo.connect($('preference_fontrol_100'), 'onchange', this, 'onChangeForCardStyle');
+            dojo.connect($('preference_fontrol_100'), 'onchange', this, 'onChangeForCardStyle');
 
-            dojo.connect($('preference_control_101'), 'onchange', this, 'onChangeVisual');
+            dojo.connect($('preference_fontrol_101'), 'onchange', this, 'onChangeVisual');
 
             var stock_deck = new ebg.stock();
             stock_deck.create(this, $('deck'), this.cardwidth, this.cardheight);
@@ -497,7 +497,7 @@ function (dojo, declare) {
 
         setChooseActionState: function () {
             this.statusBar.removeActionButtons()
-            this.changeMainBar(_('You must play a card or pass'));
+//            this.changeMainBar(_('You must play take card or leave a card'));
 //            this.unhiglightCards();
             this.SelectionType = 'hand';
             this.playerHand.unselectAll();
@@ -552,7 +552,7 @@ function (dojo, declare) {
         },
 
         setPlayCardState: function () {
-            this.changeMainBar(_('You must play a card or pass'));
+            this.statusBar.removeActionButtons()
             if (this.visual==2){
                 var playerHand = this.playerPile[this.playerId];
             }else{
