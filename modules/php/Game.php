@@ -56,6 +56,8 @@ class Game extends \Table
             "advancedCard" =>102,
             "officialScore" =>103,
             "score" =>104,
+            "showTakenCard" =>105,
+
         ]);
 
         $this->cards = $this->getNew("module.common.deck");
@@ -257,6 +259,21 @@ class Game extends \Table
                 'player_id' => $player_id,
             ]
         );
+
+
+        if ($this->getGameStateValue('showTakenCard') == 2){
+
+            $takenCards['saphir']=sizeof($this->cards->getCardsOfTypeInLocation(1,null,'taken',$player_id));
+            $takenCards['rubis']=sizeof($this->cards->getCardsOfTypeInLocation(2,null,'taken',$player_id));
+            $takenCards['emeraudes']=sizeof($this->cards->getCardsOfTypeInLocation(3,null,'taken',$player_id));
+            $takenCards['diamond']=sizeof($this->cards->getCardsOfTypeInLocation(4,null,'taken',$player_id));
+
+            self::notifyPlayer($player_id, 'takenCards', '', array(
+                'takenCards' => $takenCards,
+            ));
+
+        }
+
 
         //SHOKOBA check ie all card in table taken current player win one point
         if($this->cards->countCardInLocation('table')==0){
@@ -644,6 +661,15 @@ class Game extends \Table
         //order_by not working or did no have correct syntax ,$order_by='id'
         $result['table'] = $this->cards->getCardsInLocation($location='table');
 
+        $result['showTakenCard'] = $this->getGameStateValue('showTakenCard');
+        if ($this->getGameStateValue('showTakenCard') == 2){
+            $takenCards['saphir']=sizeof($this->cards->getCardsOfTypeInLocation(1,null,'taken',$player_id));
+            $takenCards['rubis']=sizeof($this->cards->getCardsOfTypeInLocation(2,null,'taken',$player_id));
+            $takenCards['emeraudes']=sizeof($this->cards->getCardsOfTypeInLocation(3,null,'taken',$player_id));
+            $takenCards['diamond']=sizeof($this->cards->getCardsOfTypeInLocation(4,null,'taken',$player_id));
+            $result['takenCards']=$takenCards;
+        }
+
         return $result;
     }
 
@@ -786,6 +812,19 @@ class Game extends \Table
             'table' => $this->cards->getCardsInLocation('table'),
             'deck' => $this->getDeckCard(),
         ));
+
+        if ($this->getGameStateValue('showTakenCard') == 2){
+
+            $takenCards['saphir']=0;
+            $takenCards['rubis']=0;
+            $takenCards['emeraudes']=0;
+            $takenCards['diamond']=0;
+
+            self::notifyAllPlayers( 'takenCards', '', array(
+                'takenCards' => $takenCards,
+            ));
+
+        }
 
        $this->gamestate->nextState('newTurn');
     }

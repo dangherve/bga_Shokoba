@@ -50,6 +50,9 @@ function (dojo, declare) {
             this.tableCard = null;
             this.deck = null;
 
+            this.player_id=null;
+
+            this.showTakenCard= 1;
             this.visual=1;
         },
 
@@ -406,12 +409,44 @@ function (dojo, declare) {
             // Setup game notifications to handle (see "setupNotifications" method below)
             this.setupNotifications();
 
+            this.showTakenCard = gamedatas.showTakenCard
+
+            this.showCard(gamedatas.takenCards)
+
             console.log( "Ending game setup" );
         },
 
 
         getCardUniqueId : function(color, value) {
             return (color - 1) * 10 + (value-1) ;
+        },
+
+        showCard:function(takenCard){
+
+            if(this.showTakenCard == 2) {
+                text='<div class="cp_board">'
+                if(takenCard["saphir"] >0){
+                    text+='<span id="saphir_count">'+takenCard["saphir"]
+                    text+='</span><img class="scoreIcon" src="'+g_gamethemeurl+'img/saphir.jpg" alt="saphir"/>'
+                }
+                if(takenCard["rubis"] >0){
+                    text+='<span id="rubis_count">'+takenCard["rubis"]+'</span>'
+                    text+='</span><img class="scoreIcon" src="'+g_gamethemeurl+'img/rubis.jpg" alt="rubis"/>'
+
+                }
+                if(takenCard["emeraudes"] >0){
+                    text+='<span id="emeraudes_count">'+takenCard["emeraudes"]+'</span>'
+                    text+='</span><img class="scoreIcon" src="'+g_gamethemeurl+'img/emeraude.png" alt="emeraude"/>'
+
+                }
+                if(takenCard["diamond"] >0){
+                    text+='<span id="diamond_count">'+takenCard["diamond"]+'</span>'
+                    text+='<img class="scoreIcon" src="'+g_gamethemeurl+'img/diamond.png" alt="diamond"/>'
+                }
+                text+='</div>';
+                dojo.place(text, 'current_player_board',"only");
+            }
+
         },
 
 
@@ -693,6 +728,11 @@ function (dojo, declare) {
                 var newScore = args.scores[ player_id ];
                 this.scoreCtrl[ player_id ].toValue( newScore );
             }
+        },
+
+        notif_takenCards: async function( args ){
+
+            this.showCard(args.takenCards)
         },
 
         /*
