@@ -19,6 +19,8 @@ define([
     "dojo","dojo/_base/declare",
     "ebg/core/gamegui",
     "ebg/counter",
+    "./modules/konami",
+    "./modules/confetti.browser.min",
     "ebg/stock"
 ],
 function (dojo, declare) {
@@ -228,6 +230,34 @@ function (dojo, declare) {
         setup: function( gamedatas )
         {
             console.log( "Starting game setup" );
+
+        // 🎉 Example visual effect: confetti burst
+        const easterEgg = new KonamiCode(() => {
+          confetti({
+            particleCount: 150,
+            spread: 100,
+            origin: { y: 0.6 }
+          });
+
+          const banner = document.createElement('div');
+          banner.innerText = "🎉 Konami Code Activated!";
+          banner.style.position = 'fixed';
+          banner.style.top = '30%';
+          banner.style.left = '50%';
+          banner.style.transform = 'translate(-50%, -50%)';
+          banner.style.fontSize = '2rem';
+          banner.style.padding = '20px';
+          banner.style.background = 'rgba(0,0,0,0.7)';
+          banner.style.color = '#fff';
+          banner.style.borderRadius = '10px';
+          banner.style.zIndex = 9999;
+          document.body.appendChild(banner);
+
+          setTimeout(() => {
+            banner.remove();
+          }, 3000);
+        });
+
 
             this.playerId = Number(gamedatas.player_id);
             this.playerCard = { drag: 'none', selectedItemId: null, nodes: [] };
