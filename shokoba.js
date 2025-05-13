@@ -552,27 +552,29 @@ function (dojo, declare) {
         },
 
         setPlayCardState: function () {
-            this.statusBar.removeActionButtons()
-            if (this.visual==2){
-                var playerHand = this.playerPile[this.playerId];
-            }else{
-                var playerHand = this.playerHand;
-            }
-            var tableCard = this.tableCard;
+            if( this.isCurrentPlayerActive() ){
+                this.statusBar.removeActionButtons()
+                if (this.visual==2){
+                    var playerHand = this.playerPile[this.playerId];
+                }else{
+                    var playerHand = this.playerHand;
+                }
+                var tableCard = this.tableCard;
 
-            if ((tableCard.getSelectedItems().length > 0) ) {
-                this.statusBar.addActionButton(_('Take selected card'),() => this.onTakeCard());
-            }else{
-                this.statusBar.addActionButton(_('Take selected card'),() => this.onTakeCard(),{classes: 'disabled'});
-            }
+                if ((tableCard.getSelectedItems().length > 0) ) {
+                    this.statusBar.addActionButton(_('Take selected card'),() => this.onTakeCard());
+                }else{
+                    this.statusBar.addActionButton(_('Take selected card'),() => this.onTakeCard(),{classes: 'disabled'});
+                }
 
-            if (playerHand.getSelectedItems().length == 0){
-                this.statusBar.addActionButton(_('Leave selected card'),() => this.onLeaveCard(),{classes: 'disabled '});
-            }else{
-                this.statusBar.addActionButton(_('Leave selected card'),() => this.onLeaveCard());
-            }
+                if (playerHand.getSelectedItems().length == 0){
+                    this.statusBar.addActionButton(_('Leave selected card'),() => this.onLeaveCard(),{classes: 'disabled '});
+                }else{
+                    this.statusBar.addActionButton(_('Leave selected card'),() => this.onLeaveCard());
+                }
 
-            this.statusBar.addActionButton(_('Cancel'),() => this.setChooseActionState())
+                this.statusBar.addActionButton(_('Cancel'),() => this.setChooseActionState())
+            }
        },
 
         onPlayerHandSelectionChanged: function () {
