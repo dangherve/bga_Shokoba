@@ -109,8 +109,13 @@ class Game extends \Table
 
         $this->notifyAllPlayers(
             'leaveCard',
-            clienttranslate($this->getActivePlayerName().' lays a '.$card['type_arg']." ".$this->translatedColors[$card['type']].' card into the center of the table.'),
+            clienttranslate('${player_name} lays a ${value} ${symbol} card into the center of the table.'),
             [
+                //TO DO: use symbol instead of name and try color text
+                'value' => $card['type_arg'],
+                'symbol' => $this->translatedColors[$card['type']],
+
+                'player_name' => $this->getActivePlayerName(),
                 'card_id' => $card_id,
                 'card_type' => $this->getCardUniqueId((int)$card['type'],(int)$card['type_arg']),
                 'player_id' => $player_id,
@@ -154,7 +159,7 @@ class Game extends \Table
         $lastCardPlay = $this->getGameStateValue("lastCardPlay");
         $liste_tableCard_ids=explode(',',$tableCard_ids);
 
-        $message=$this->getActivePlayerName().' plays a ';
+        $message='${player_name} plays a ';
 
         $cardsOnTable = $this->cards->getCardsInLocation('table');
 
@@ -202,7 +207,8 @@ class Game extends \Table
         }elseif (($lastCardPlay != -1) && (strlen($tableCard_ids)!=0)){
             $value=0;
 
-            $messageT='';
+            $message='${player_name} played the last card ';
+            $messageT="";
             //calculate value and check if last card played
             foreach ($liste_tableCard_ids as $tableCard_id) {
                 $card=$this->cards->getCard($tableCard_id);
@@ -212,11 +218,11 @@ class Game extends \Table
                     $cardsTaken[]=(int)SELF::getCardValue($tableCard_id);
                 }else{
                     $lastCardplayed=true;
-                    $message=$card['type_arg']." ".$this->translatedColors[$card['type']].' card into the center of the table and collects ';
+                    $message.=$card['type_arg']." ".$this->translatedColors[$card['type']].' and collects ';
                 }
             }
 
-            $message.=$messageT;
+            $message.=$messageT." and had to play again";
 
             //last card played check
             if(!$lastCardplayed){
@@ -251,9 +257,11 @@ class Game extends \Table
         }
 
         //update cards
+        //TO DO improve card play and taken
         $this->notifyAllPlayers(
             'takeCard',clienttranslate($message),
             [
+                'player_name' => $this->getActivePlayerName(),
                 'tableCard_id' => $liste_tableCard_ids,
                 'playerCard_id' => $playerCard_id,
                 'player_id' => $player_id,
@@ -316,7 +324,8 @@ class Game extends \Table
 
             //update score
             $newScores = $this->getCollectionFromDb( "SELECT player_id, player_score FROM player", true );
-            $this->notifyAllPlayers( "newScores", "", array(
+            $this->notifyAllPlayers( "newScores", clienttranslate('${player_name} empty the table so score a SHOKOBA'), array(
+                'player_name' => $this->getActivePlayerName(),
                 "scores" => $newScores
             ));
 
@@ -799,9 +808,6 @@ class Game extends \Table
 
         $this->setGameStateValue("lastCardPlay", -1);
 
-        // Deal cards to each player (and signal the UI to clean-up)
-        //self::notifyAllPlayers('cleanUp', clienttranslate('${player_name} deals a new hand.'));
-
 		// Create deck, shuffle it and give initial cards
         $players = self::loadPlayersBasicInfos();
 
@@ -846,8 +852,8 @@ class Game extends \Table
             ));
 
             $hand = $this->getPlayerHand($player_id);
-
-            self::notifyPlayer($player_id, 'newHandPrivate', '', array(
+            self::notifyPlayer($player_id, 'newHandPrivate', clienttranslate('${player_name} deals a new hand'), array(
+                'player_name' => $this->getPlayerNameById($this->getGameStateValue('dealer')),
                 'hand' => $hand,
             ));
         }
