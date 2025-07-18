@@ -66,6 +66,21 @@
         background-repeat: none;
     }
 */
+.saphir-color {
+    color: blue;
+}
+
+.rubis-color {
+    color: red;
+}
+
+.emeraude-color {
+    color: green;
+}
+
+.diamond-color {
+    color: gold;
+}
 
 /** Table layout **/
 

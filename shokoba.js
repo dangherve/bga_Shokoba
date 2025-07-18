@@ -479,6 +479,73 @@ function (dojo, declare) {
 
         },
 
+        /* This enable to inject translatable styled things to logs or action bar */
+        /* @Override */
+        format_string_recursive : function(log, args) {
+            try {
+
+                if (log && args && !args.processed) {
+                    args.processed = true;
+
+                    if (args.symbol !== undefined) {
+                        switch( args.symbol )
+                        {
+                            case '1':
+                                args.symbol='<img class="scoreIcon" src="'+g_gamethemeurl+'img/saphir.jpg" alt="saphir"/>'
+                                args.value='<strong class="saphir-color">'+args.value+'</strong>'
+                                break;
+                            case '2':
+                                args.symbol='<img class="scoreIcon" src="'+g_gamethemeurl+'img/rubis.jpg" alt="rubis"/>'
+                                args.value='<strong class="rubis-color">'+args.value+'</strong>'
+                                break;
+                            case '3':
+                                args.symbol='<img class="scoreIcon" src="'+g_gamethemeurl+'img/emeraude.png" alt="emeraude"/>'
+                                args.value='<strong class="emeraude-color">'+args.value+'</strong>'
+                                break;
+                            case '4':
+                                args.symbol='<img class="scoreIcon" src="'+g_gamethemeurl+'img/diamond.png" alt="diamond"/>'
+                                args.value='<strong class="diamond-color">'+args.value+'</strong>'
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+
+                    if (args.cardsTakenUI !== undefined) {
+                        text=""
+                        for(var i in args.cardsTakenUI) {
+                            switch( args.cardsTakenUI[i].type )
+                            {
+                                case '1':
+                                    text+='<strong class="saphir-color">'+args.cardsTakenUI[i].type_arg+'</strong> '
+                                    text+='<img class="scoreIcon" src="'+g_gamethemeurl+'img/saphir.jpg" alt="saphir"/> '
+                                    break;
+                                case '2':
+                                    text+='<strong class="rubis-color">'+args.cardsTakenUI[i].type_arg+'</strong> '
+                                    text+='<img class="scoreIcon" src="'+g_gamethemeurl+'img/rubis.jpg" alt="rubis"/> '
+                                    break;
+                                case '3':
+                                    text+='<strong class="emeraude-color">'+args.cardsTakenUI[i].type_arg+'</strong> '
+                                    text+='<img class="scoreIcon" src="'+g_gamethemeurl+'img/emeraude.png" alt="emeraude"/> '
+                                    break;
+                                case '4':
+                                    text+='<strong class="diamond-color">'+args.cardsTakenUI[i].type_arg+'</strong> '
+                                    text+='<img class="scoreIcon" src="'+g_gamethemeurl+'img/diamond.png" alt="diamond"/> '
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                         args.cardsTakenUI= dojo.string.substitute("${cardsTakenUI}", {'cardsTakenUI' : text});
+
+                    }
+
+                }
+            } catch (e) {
+                console.error(log,args,"Exception thrown", e.stack);
+            }
+            return this.inherited(arguments);
+        },
 
         ///////////////////////////////////////////////////
         //// Game & client states
