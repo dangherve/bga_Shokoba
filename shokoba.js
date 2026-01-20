@@ -456,25 +456,25 @@ function (dojo, declare) {
             if(this.showTakenCard == 2) {
                 text='<div class="cp_board">'
                 if(takenCard["saphir"] >0){
-                    text+='<span id="saphir_count">'+takenCard["saphir"]
-                    text+='</span><img class="scoreIcon" src="'+g_gamethemeurl+'img/saphir.jpg" alt="saphir"/>'
+                    text+='<span id="saphir_count">'+takenCard["saphir"]+'</span> '
+                    text+='<img class="scoreIcon" src="'+g_gamethemeurl+'img/saphir.jpg" alt="saphir"/> '
                 }
                 if(takenCard["rubis"] >0){
-                    text+='<span id="rubis_count">'+takenCard["rubis"]+'</span>'
-                    text+='</span><img class="scoreIcon" src="'+g_gamethemeurl+'img/rubis.jpg" alt="rubis"/>'
+                    text+='<span id="rubis_count">'+takenCard["rubis"]+'</span> '
+                    text+='<img class="scoreIcon" src="'+g_gamethemeurl+'img/rubis.jpg" alt="rubis"/> '
 
                 }
                 if(takenCard["emeraudes"] >0){
-                    text+='<span id="emeraudes_count">'+takenCard["emeraudes"]+'</span>'
-                    text+='</span><img class="scoreIcon" src="'+g_gamethemeurl+'img/emeraude.png" alt="emeraude"/>'
+                    text+='<span id="emeraudes_count">'+takenCard["emeraudes"]+'</span> '
+                    text+='<img class="scoreIcon" src="'+g_gamethemeurl+'img/emeraude.png" alt="emeraude"/> '
 
                 }
                 if(takenCard["diamond"] >0){
-                    text+='<span id="diamond_count">'+takenCard["diamond"]+'</span>'
-                    text+='<img class="scoreIcon" src="'+g_gamethemeurl+'img/diamond.png" alt="diamond"/>'
+                    text+='<span id="diamond_count">'+takenCard["diamond"]+'</span> '
+                    text+='<img class="scoreIcon" src="'+g_gamethemeurl+'img/diamond.png" alt="diamond"/> '
                 }
                 text+='</div>';
-                dojo.place(text, 'current_player_board',"only");
+                dojo.place(text,'current_player_board',"only");
             }
 
         },
@@ -536,7 +536,14 @@ function (dojo, declare) {
                                     break;
                             }
                         }
-                         args.cardsTakenUI= dojo.string.substitute("${cardsTakenUI}", {'cardsTakenUI' : text});
+                        args.cardsTakenUI= dojo.string.substitute("${cardsTakenUI}", {'cardsTakenUI' : text});
+
+                    }
+
+                    if (args.shokoba !== undefined) {
+                        text='<img class="scoreIcon" src="'+g_gamethemeurl+'img/titre.png" alt="shokoba"/>'
+
+                        args.shokoba= dojo.string.substitute("${shokoba}", {'shokoba' : text});
 
                     }
 

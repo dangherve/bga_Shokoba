@@ -111,7 +111,6 @@ class Game extends \Table
             'leaveCard',
             clienttranslate('${player_name} lays a ${value} ${symbol} card into the center of the table.'),
             [
-                //TO DO: use symbol instead of name and try color text
                 'value' => $card['type_arg'],
                 'symbol' => $card['type'],
 
@@ -322,8 +321,9 @@ class Game extends \Table
 
             //update score
             $newScores = $this->getCollectionFromDb( "SELECT player_id, player_score FROM player", true );
-            $this->notifyAllPlayers( "newScores", clienttranslate('${player_name} empty the table so score a SHOKOBA'), array(
+            $this->notifyAllPlayers( "newScores", clienttranslate('${player_name} empty the table so score a ${shokoba}'), array(
                 'player_name' => $this->getActivePlayerName(),
+                "shokoba" => "SHOKOBA",
                 "scores" => $newScores
             ));
 
