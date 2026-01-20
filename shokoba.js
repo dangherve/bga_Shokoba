@@ -32,13 +32,13 @@ function (dojo, declare) {
             /*
             this.cardwidth = 100;
             this.cardheight = 100;
-            this.cards_url = g_gamethemeurl + 'img/cards.png';
+            this.cards_url = g_gamethemeurl +'img/cards.png';
             */
             //official image
             this.cardwidth = 250;
             this.cardheight = 250;
             this.cards_url = null;
-            //g_gamethemeurl + 'img/cards.png';
+            //g_gamethemeurl +'img/cards.png';
 
 
             this.styles = null;
@@ -62,13 +62,13 @@ function (dojo, declare) {
         onChangeForCardStyle : function(event) {
 
             var select = event.currentTarget;
-            var current_style = 'shokoba_' + this.current_style_id;
+            var current_style ='shokoba_' + this.current_style_id;
             var new_style_id = select.options[select.selectedIndex].value ;
-            var new_style = 'shokoba_' + new_style_id;
+            var new_style ='shokoba_' + new_style_id;
 
             // Set that new style as the player preference
-            dojo.query('#preference_control_100 > option[value="' + (new_style_id + 1) + '"], #preference_fontrol_100 > option[value="' + (new_style_id + 1) + '"]').forEach(function(node) {
-                dojo.attr(node, 'selected', true);
+            dojo.query('#preference_control_100 > option[value="' + (new_style_id + 1) +'"], #preference_fontrol_100 > option[value="' + (new_style_id + 1) +'"]').forEach(function(node) {
+                dojo.attr(node,'selected', true);
             });
 
             // Change style of cards on table
@@ -100,9 +100,9 @@ function (dojo, declare) {
             }
 
             // Change style of the current visible cards in the stocks
-            image = 'url(' + image + ')';
+            image ='url(' + image +')';
             dojo.query('.stockitem').forEach(function(node) {
-                dojo.style(node, 'background-image', image);
+                dojo.style(node,'background-image', image);
             });
 
             // Change the name of the deck used
@@ -160,7 +160,7 @@ function (dojo, declare) {
 
                 player.setAttribute("id","player_hand_"+player_id)
 
-                document.getElementById('hand_' + p).setAttribute("id", 'hand_' + player_id);
+                document.getElementById('hand_' + p).setAttribute("id",'hand_' + player_id);
                 p=p+1
 
                 stock_player.create(this, $('hand_' + player_id), this.cardwidth, this.cardheight);
@@ -175,7 +175,7 @@ function (dojo, declare) {
                 this.playerPile[player_id] = stock_player;
                 if (Number(player_id) === this.playerId) {
                     stock_player.setSelectionMode(1);
-                    dojo.connect(stock_player, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
+                    dojo.connect(stock_player,'onChangeSelection', this,'onPlayerHandSelectionChanged');
 
                 } else {
                     stock_player.setSelectionMode(0);
