@@ -383,6 +383,17 @@ class Game extends \Table
         }
     }
 
+    public function debug_shokoba(){
+            //update score
+            $newScores = $this->getCollectionFromDb( "SELECT player_id, player_score FROM player", true );
+            $this->notifyAllPlayers( "newScores", clienttranslate('${player_name} empty the table so score a ${shokoba}'), [
+                'player_name' => $this->getActivePlayerName(),
+                "shokoba" => "SHOKOBA",
+                "scores" => $newScores
+            ]);
+
+    }
+
     /**
      *
      * Calculate point
@@ -919,7 +930,6 @@ class Game extends \Table
      */
     protected function zombieTurn(array $state, int $active_player): void
     {
-        $state_name = $state["name"];
 
         if ($state["type"] === "activeplayer") {
             $player_hand = $this->getPlayerHand($active_player);

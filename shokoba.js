@@ -409,8 +409,6 @@ function (dojo, declare) {
 
             stock_player.image_items_per_row = 10;
 
-            //stock.onItemCreate = dojo.hitch(this, 'onCreateNewCard');
-
             dojo.connect(stock_player, 'onChangeSelection', this, 'onPlayerHandSelectionChanged');
 
             var position_in_sprite = 0;
@@ -562,7 +560,6 @@ function (dojo, declare) {
         //
         onEnteringState: function( stateName, args )
         {
-            console.log( 'Entering state: '+stateName, args );
 
             switch( stateName )
             {
@@ -577,8 +574,6 @@ function (dojo, declare) {
                     }
                     player=document.getElementById('player_hand_' + args.active_player).style.border="3px solid #"+ this.players[args.active_player].color;
                     break;
-
-
 
             case 'dummmy':
                 break;
@@ -609,7 +604,6 @@ function (dojo, declare) {
         },
 
         onCardClick: function( card_id ){
-            console.log( 'onCardClick', card_id );
 
             this.bgaPerformAction("actPlayCard", {
                 card_id,
@@ -672,7 +666,7 @@ function (dojo, declare) {
                 }
 
                 if (playerHand.getSelectedItems().length == 0){
-                    this.statusBar.addActionButton(_('Leave selected card'),() => this.onLeaveCard(),{classes: 'disabled '});
+                    this.statusBar.addActionButton(_('Leave selected card'),() => this.onLeaveCard(),{classes:'disabled'});
                 }else{
                     this.statusBar.addActionButton(_('Leave selected card'),() => this.onLeaveCard());
                 }
@@ -696,10 +690,10 @@ function (dojo, declare) {
 
             var items = playerHand.getSelectedItems();
             if (items.length > 0) {
-                this.SelectionType = 'hand';
+                this.SelectionType ='hand';
                 this.setPlayCardState();
                 this.playerCard.selectedItemId = items[0].id;
-            } else if (this.SelectionType === 'hand') {
+            } else if (this.SelectionType ==='hand') {
                 this.setChooseActionState();
             }
 
@@ -716,10 +710,10 @@ function (dojo, declare) {
 
                 var items = tableCard.getSelectedItems();
                 if (items.length > 0) {
-                    this.SelectionType = 'table';
+                    this.SelectionType ='table';
                     this.setPlayCardState();
                     this.tableCard.selectedItemId = items[0].id;
-                } else if (this.SelectionType === 'table') {
+                } else if (this.SelectionType ==='table') {
                     this.setChooseActionState();
                 }
 
@@ -736,8 +730,6 @@ function (dojo, declare) {
         */
         setupNotifications: function()
         {
-            console.log( 'notifications subscriptions setup' );
-
             this.bgaSetupPromiseNotifications();
         },
 
