@@ -16,3 +16,8 @@ convert dos_r.png dos_r.png dos_r.png dos_r.png dos_r.png dos_r.png e_7_r.png do
 convert dos_r.png dos_r.png dos_r.png dos_r.png dos_r.png dos_r.png d_7_r.png dos_r.png dos_r.png dos_r.png  +append diamond_r.png
 
 convert saphir_r.png rubis_r.png emeraude_r.png diamond_r.png -append ../shokoba_2.png
+
+
+convert saphir/1_r.png saphir/2_r.png saphir/3_r.png saphir/4_r.png saphir/5_r.png saphir/6_r.png e_7.png saphir/8_r.png saphir/9_r.png saphir/10_r.png +append /tmp/m1.png
+convert rubis/1_r.png rubis/2_r.png rubis/3_r.png rubis/4_r.png rubis/5_r.png rubis/6_r.png d_7.png rubis/8_r.png rubis/9_r.png rubis/10_r.png +append  /tmp/m2.png
+convert /tmp/m1.png /tmp/m2.png dos_r.png  -append ../shokoba_2.png ../../../bga/memory/img
